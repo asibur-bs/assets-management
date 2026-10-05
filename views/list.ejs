@@ -1,0 +1,54 @@
+<%- include('_header') %>
+<h1>Assets</h1>
+<form method="get" class="filters" data-testid="filters">
+  <input type="search" name="q" placeholder="Search name or serial" value="<%= filters.q %>" data-testid="filter-q" />
+  <select name="category" data-testid="filter-category">
+    <option value="">All categories</option>
+    <option value="hardware" <%= filters.category === 'hardware' ? 'selected' : '' %>>Hardware</option>
+    <option value="software-license" <%= filters.category === 'software-license' ? 'selected' : '' %>>Software / License</option>
+  </select>
+  <select name="status" data-testid="filter-status">
+    <option value="">All statuses</option>
+    <option value="in-stock" <%= filters.status === 'in-stock' ? 'selected' : '' %>>In stock</option>
+    <option value="assigned" <%= filters.status === 'assigned' ? 'selected' : '' %>>Assigned</option>
+    <option value="returned" <%= filters.status === 'returned' ? 'selected' : '' %>>Returned</option>
+    <option value="lost" <%= filters.status === 'lost' ? 'selected' : '' %>>Lost</option>
+  </select>
+  <select name="sort" data-testid="filter-sort">
+    <option value="name" <%= filters.sort === 'name' ? 'selected' : '' %>>Sort by name</option>
+    <option value="created_at" <%= filters.sort === 'created_at' ? 'selected' : '' %>>Sort by created</option>
+  </select>
+  <select name="dir" data-testid="filter-dir">
+    <option value="asc" <%= filters.dir === 'asc' ? 'selected' : '' %>>Asc</option>
+    <option value="desc" <%= filters.dir === 'desc' ? 'selected' : '' %>>Desc</option>
+  </select>
+  <button type="submit" class="btn" data-testid="filter-apply">Apply</button>
+</form>
+
+<table class="asset-table" data-testid="asset-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Category</th>
+      <th>Serial / Key</th>
+      <th>Status</th>
+      <th>Assigned to</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (assets.length === 0) { %>
+      <tr><td colspan="5" class="empty" data-testid="empty-row">No assets yet.</td></tr>
+    <% } else { %>
+      <% assets.forEach(function(asset) { %>
+        <tr data-testid="asset-row-<%= asset.id %>">
+          <td><a href="/assets/<%= asset.id %>" data-testid="asset-link-<%= asset.id %>"><%= asset.name %></a></td>
+          <td><%= asset.category %></td>
+          <td><%= asset.serial_or_key %></td>
+          <td><span class="status status-<%= asset.status %>" data-testid="status-<%= asset.id %>"><%= asset.status %></span></td>
+          <td><%= asset.assigned_to || '' %></td>
+        </tr>
+      <% }); %>
+    <% } %>
+  </tbody>
+</table>
+<%- include('_footer') %>

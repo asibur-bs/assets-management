@@ -1,0 +1,30 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    { "path": "package.json" },
+    { "path": "README.md" },
+    { "path": ".gitignore" },
+    { "path": "vitest.config.js" },
+    { "path": "src/server.js" },
+    { "path": "src/app.js" },
+    { "path": "src/db/index.js" },
+    { "path": "src/db/migrate.js" },
+    { "path": "src/repositories/assets-repo.js" },
+    { "path": "src/services/asset-service.js" },
+    { "path": "src/routes/assets.js" },
+    { "path": "views/_header.ejs" },
+    { "path": "views/_footer.ejs" },
+    { "path": "views/list.ejs" },
+    { "path": "views/new.ejs" },
+    { "path": "views/detail.ejs" },
+    { "path": "views/error.ejs" },
+    { "path": "public/styles.css" },
+    { "path": "tests/db.test.js" },
+    { "path": "tests/assets-repo.test.js" },
+    { "path": "tests/asset-service.test.js" },
+    { "path": "tests/routes.test.js" },
+    { "path": "tests/views.test.js" }
+  ]
+}

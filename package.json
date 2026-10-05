@@ -1,0 +1,30 @@
+{
+  "name": "assets-management",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Internal asset-tracking system (poc)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "vitest run",
+    "test:db": "vitest run tests/db.test.js",
+    "test:repo": "vitest run tests/assets-repo.test.js",
+    "test:service": "vitest run tests/asset-service.test.js",
+    "test:routes": "vitest run tests/routes.test.js",
+    "test:views": "vitest run tests/views.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0",
+    "vitest": "^2.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

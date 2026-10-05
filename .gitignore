@@ -83,4 +83,12 @@ aidlc/diagnostics/
 # which was proven to corrupt the multi-line audit blocks) ·
 # aidlc/spaces/*/intents/*/<phase>/<stage>/*.md (artifacts + diary).
 .claude/settings.local.json
+# Asset tracker (poc)
+node_modules/
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+coverage/
 # END AI-DLC:gitignore
