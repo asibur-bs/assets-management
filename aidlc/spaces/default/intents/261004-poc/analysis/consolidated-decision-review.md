@@ -4,14 +4,31 @@
 **Baseline:** Asset Tracker POC (`aidlc/spaces/default/intents/261004-poc`, workflow complete)
 **Companions:** `gap-analysis.md` (`32af9e9`), `decision-brief.md` (`5f2a464`) — both unchanged
 
-**Status:** 🟡 **PARTIALLY APPROVED — 2 of 17 items.** Q1 (D1a) is **APPROVED**. Q10 (Q10-iv) is
-**APPROVED IN PRINCIPLE**, conditioned on the concurrency-safety requirement documented in §7.1.6.
-The remaining 15 items (A, B, C, D1/D2/D3, Q2–Q9, Q11, Q12) are **PENDING** — options and
-recommendations are presented for review and are **not** recorded as requirements. No AIDLC intent
-was created. No POC code, database, test, or configuration was modified. The committed gap analysis
-and decision brief are untouched. The 66/66 passing test suite remains the baseline.
+**Status:** 🟢 **ALL 17 ITEMS APPROVED (2026-11-06).** A, B, C, D1, D2, D3, Q1–Q12 are approved as
+recommended. Q1 (D1a) and Q10 (Q10-iv) were confirmed earlier; the remaining 15 were confirmed on
+review of §7–§12. Q10's approval is conditioned on the concurrency-safety requirement documented in
+§7.1.6, which is **satisfied** — the strategy and its limitations were verified by execution and
+are recorded there.
 
-**Date:** 2026-11-06 · **Amended:** 2026-11-06 (Q1/Q10 confirmed; concurrency-safety section added)
+**Standing conditions attached to the approval** (to be reflected in the requirements):
+
+1. The application-level uniqueness check uses an `IMMEDIATE` transaction and a non-zero SQLite
+   `busy_timeout`; exhausted lock waits (`SQLITE_BUSY`) map to a retryable error.
+2. The functional-index expression and the application-level comparison predicate use **one shared
+   definition**.
+3. Both asset registration and serial/key updates enforce the same uniqueness policy.
+4. Historical backfills preserve original records and audit traceability; failed or skipped
+   backfills are reported.
+5. Dashboard, assignee, asset-list, and CSV counts use consistent filtering and counting definitions.
+6. All lifecycle transitions have explicit validation and audit behavior.
+7. The 66/66 passing test baseline is preserved, and regression tests are added for the newly
+   approved behavior.
+
+No POC code, database, test, or configuration was modified. The committed gap analysis and decision
+brief are untouched. The 66/66 passing test suite remains the baseline.
+
+**Date:** 2026-11-06 · **Amended:** 2026-11-06 (Q1/Q10 confirmed; concurrency-safety section added;
+full approval of all 17 items recorded)
 
 ---
 
@@ -898,29 +915,32 @@ retirement-specific values ("written off", "returned to vendor", "donated", "oth
 
 ## 8. Consolidated decision matrix
 
-| ID | Question | Recommended | Alternatives | Coupled to |
-|---|---|---|---|---|---|
-| **A** | Serial uniqueness scope | **A-i** — category-scoped + case-insensitive via functional index | A-ii stored normalised col · A-iii app-only · A-iv globally unique | Q10 |
-| **B** | Lost asset recovery | **B-ii** — `lost → in-stock` + preserve holder + loss reason | B-i terminal · B-iii `lost → assigned` | D, C, Q4, Q9 |
-| **C** | Inventory counting | **C-i** — 5 exclusive buckets + Active Inventory + Total Records, one shared function | C-ii total-includes-discarded · C-iii active-only · C-iv overlapping | Q1, D, B |
-| **D** | Lifecycle transitions | **D1a** (returned is a resting state) + **D2b** (assigned→discarded resolves inline) + D3 edges | D1b transient · D2a · D2c · per-edge variants | Q1, B, C |
-| **Q1** | Returned vs In Stock | ✅ **APPROVED — D1a** | D1b | D, C, §4.1 amendment |
-| **Q2** | Pre-MVP audit rows in the 100% metric | **Q2-i** — excluded, `system` backfill | Q2-ii counted · Q2-iii NULL actor | — |
-| **Q3** | `assigned-to` on registration | **Q3-i** — remove | Q3-ii keep as plain field · Q3-iii perform assignment | — |
-| **Q4** | Recovery requires a reason | **Q4-ii** — yes | Q4-i no · Q4-iii optional | B |
-| **Q5** | CSV injection policy | **Q5-i** — prefix-quote | Q5-ii strip · Q5-iii none · Q5-iv RFC-4180 only | — |
-| **Q6** | Is `discarded` recoverable | **Q6-i** — terminal | Q6-ii recoverable | D |
-| **Q7** | `in-stock → lost` permitted | **Q7-i** — yes, with reason | Q7-ii no · Q7-iii no reason | D, Q12 |
-| **Q8** | Design gate consolidation | **Q8-i** — merge 1+2 and 3+4 | Q8-ii all separate · Q8-iii merge all four | — |
-| **Q9** | Lost-asset backfill attempted | **Q9-i** — optional, never fails | Q9-ii no · Q9-iii mandatory | B |
-| **Q10** | Pre-existing case-variant duplicates | ✅ **APPROVED IN PRINCIPLE — Q10-iv** + concurrency-safe app check | Q10-i detect-and-abort · Q10-ii detect-and-skip alone · Q10-iii auto-remediate ❌ | A |
-| **Q11** | Audit action naming | **Q11-i** — past-tense hyphenated, with mapping | Q11-ii bare verbs · Q11-iii noun forms | — |
-| **Q12** | Discard reason required | **Q12-i** — always | Q12-ii optional · Q12-iii conditional | D |
+| ID | Question | **Approved** | Alternatives | Coupled to |
+|---|---|---|---|---|
+| **A** | Serial uniqueness scope | ✅ **A-i** — category-scoped + case-insensitive via functional index | A-ii stored normalised col · A-iii app-only · A-iv globally unique | Q10 |
+| **B** | Lost asset recovery | ✅ **B-ii** — `lost → in-stock` + preserve holder + loss reason | B-i terminal · B-iii `lost → assigned` | D, C, Q4, Q9 |
+| **C** | Inventory counting | ✅ **C-i** — 5 exclusive buckets + Active Inventory + Total Records, one shared function | C-ii total-includes-discarded · C-iii active-only · C-iv overlapping | Q1, D, B |
+| **D1** | Is `returned` a resting state? | ✅ **D1a** — yes, a distinct resting state | D1b transient | Q1, C, §4.1 amendment |
+| **D2** | `assigned → discarded` | ✅ **D2b** — assignment resolved inline and recorded | D2a fake return · D2c two-step | Q12 |
+| **D3** | Remaining transition edges | ✅ **All proposed** — `in-stock → assigned/lost/discarded`; `assigned → returned/lost/discarded`; `returned → assigned/lost/discarded`; `lost → in-stock`; `discarded` terminal; `lost → discarded` **disallowed** | per-edge variants | B, Q7 |
+| **Q1** | Returned vs In Stock | ✅ **D1a** | D1b | D, C, §4.1 amendment |
+| **Q2** | Pre-MVP audit rows in the 100% metric | ✅ **Q2-i** — excluded, `system` backfill | Q2-ii counted · Q2-iii NULL actor | — |
+| **Q3** | `assigned-to` on registration | ✅ **Q3-i** — remove | Q3-ii keep as plain field · Q3-iii perform assignment | — |
+| **Q4** | Recovery requires a reason | ✅ **Q4-ii** — yes | Q4-i no · Q4-iii optional | B |
+| **Q5** | CSV injection policy | ✅ **Q5-i** — prefix-quote | Q5-ii strip · Q5-iii none · Q5-iv RFC-4180 only | — |
+| **Q6** | Is `discarded` recoverable | ✅ **Q6-i** — terminal | Q6-ii recoverable | D |
+| **Q7** | `in-stock → lost` permitted | ✅ **Q7-i** — yes, with reason | Q7-ii no · Q7-iii no reason | D, Q12 |
+| **Q8** | Design gate consolidation | ✅ **Q8-i** — merge 1+2 and 3+4; handoff standalone | Q8-ii all separate · Q8-iii merge all four | — |
+| **Q9** | Lost-asset backfill attempted | ✅ **Q9-i** — optional, never fails, reports recovered/unrecoverable | Q9-ii no · Q9-iii mandatory | B |
+| **Q10** | Pre-existing case-variant duplicates | ✅ **Q10-iv** — belt-and-braces + concurrency-safe app check | Q10-i detect-and-abort · Q10-ii detect-and-skip alone · Q10-iii auto-remediate | A |
+| **Q11** | Audit action naming | ✅ **Q11-i** — past-tense hyphenated, with mapping | Q11-ii bare verbs · Q11-iii noun forms | — |
+| **Q12** | Discard reason required | ✅ **Q12-i** — always | Q12-ii optional · Q12-iii conditional | D |
 
-**Confirmation status as of 2026-11-06:** Q1 and Q10 are **APPROVED**. All 15 remaining items (A, B,
-C, D1/D2/D3, Q2–Q9, Q11, Q12) remain **PENDING** and are not recorded as requirements. Q10's
-approval is *in principle* and is conditioned on the concurrency-safety requirement now documented
-in §7.1.6.
+**Confirmation status as of 2026-11-06: ALL 17 ITEMS APPROVED.** The 15 items pending at the
+previous amendment (A, B, C, D1/D2/D3, Q2–Q9, Q11, Q12) were confirmed on review of §7–§12, each
+as recommended. Q10's earlier "in principle" approval is now unconditional: its concurrency-safety
+condition is satisfied by the strategy and limitations documented in §7.1.6. The 7 standing
+conditions listed at the head of this document attach to the approval.
 
 ---
 
@@ -1060,12 +1080,13 @@ Q1 → D1a/D1b → B ↔ Q4 ↔ Q7 ↔ Q12 → C (+ C-i-M1) → A ↔ Q10
   §7.1.6 with six executed configurations, the `IMMEDIATE`-transaction + `busy_timeout` strategy,
   and eight explicitly stated limitations (L1–L8).
 
-### Still needed — a single option letter per remaining item
+### Approved on review (2026-11-06) — the decision set is complete
 
-From §8's matrix: **A, B, C, D1, D2, D3, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q11, Q12** — 16 items.
-Partial approval is fine: some confirmed, some revised, some left open.
+The remaining 16 items — **A, B, C, D1, D2, D3, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q11, Q12** — were
+all approved as recommended. **The decision set is closed: 17 of 17.** These become the source of
+truth for the `asset-tracker-mvp` intent's requirements.
 
-**How the two confirmed decisions constrain the rest:**
+**How the two earlier confirmations constrained the rest:**
 
 - **Q1 = D1a** ⇒ C-i's five-bucket model is confirmed in shape (5 buckets, not 4), and the
   **C-i-M1 mitigation is mandatory**, not optional — the Returned card must be labelled and the
@@ -1084,21 +1105,19 @@ Partial approval is fine: some confirmed, some revised, some left open.
   whether or not the index exists. The `IMMEDIATE` transaction is therefore required, not optional
   hardening.
 
-**The two I'd most like your attention on next:**
+**Two decisions carried the strongest arguments, and both were confirmed:**
 
 - **B (lost asset recovery)** — the strongest single argument in the review. The POC's
   `markLost` **destroys the previous holder**; the only surviving trace is the prose string
   `"HW" marked as lost.` "Who had it when it went missing" is unanswerable today. B-ii fixes it
-  with one transition and one column. B-i is free but permanently orphans found assets.
-- **D2b** (`assigned → discarded` resolving the assignment inline) — the recommendation is
-  **D2b over D2a specifically because D2a corrupts the audit trail**: it would force an admin to
-  record a return for an asset the employee still physically holds. D2b also depends on **Q12**
-  (whether a discard always requires a reason).
+  with one transition and one column. B-i was free but would have permanently orphaned found
+  assets.
+- **D2b** (`assigned → discarded` resolving the assignment inline) — confirmed over D2a
+  specifically because D2a corrupts the audit trail: it would force an admin to record a return
+  for an asset the employee still physically holds.
 
-**Two items I added since the decision brief**, both small but they affect the schema and should be
-settled before the audit migration is written: **Q11** (audit action naming — the POC's four values
-are inconsistent) and **Q12** (whether a discard always requires a reason — your §MVP-10 says
-"where required" without saying what).
+**Next step:** create the `asset-tracker-mvp` intent and record these as requirements, with
+traceability to the POC's FR1.3, FR4.4, FR4.5, and FR5.3.
 
 ---
 
