@@ -45,7 +45,11 @@ function createAsset(db, input) {
   }
   const id = randomUUID();
   const now = nowIso(db);
-  const status = input.assignedTo ? 'assigned' : 'in-stock';
+  // FR1.5: a newly registered asset is ALWAYS persisted in the `in-stock`
+  // state. An optional `assigned-to` is stored as a plain field on the record
+  // and does not move the asset into the `assigned` state — the asset only
+  // enters `assigned` through the assign action (FR4.2).
+  const status = 'in-stock';
   try {
     db.prepare(`
       INSERT INTO assets (id, category, name, serial_or_key, model, notes, status, assigned_to, created_at, updated_at)
@@ -83,7 +87,8 @@ function updateAsset(db, id, patch) {
   const merged = { ...current, ...patch };
   db.prepare(`
     UPDATE assets
-       SET name = ?, serial_or_key = ?, model = ?, notes = ?, category = ?, assigned_to = ?, status = ?, updated_at = ?
+       SET name = ?, serial_or_key = ?, model = ?, notes = ?, category = ?, assigned_to = ?,
+           status = ?, assigned_at = ?, returned_at = ?, updated_at = ?
      WHERE id = ?
   `).run(
     merged.name,
@@ -93,6 +98,8 @@ function updateAsset(db, id, patch) {
     merged.category,
     merged.assigned_to,
     merged.status,
+    merged.assigned_at ?? null,
+    merged.returned_at ?? null,
     nowIso(db),
     id
   );
@@ -131,6 +138,7 @@ module.exports = {
   updateAsset,
   recordAudit,
   latestAuditFor,
+  nowIso,
   ALLOWED_CATEGORIES,
   ALLOWED_STATUSES,
   validateCreate,

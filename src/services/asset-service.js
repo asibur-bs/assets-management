@@ -32,9 +32,17 @@ function makeError(message, code) {
 }
 
 function registerAsset(db, input) {
+  // FR1.5: the asset is always created in the `in-stock` state. An optional
+  // `assigned-to` is stored as a plain field on the record; it does not perform
+  // an assignment and does not move the asset out of `in-stock`.
   const asset = repo.createAsset(db, input);
   if (input.assignedTo) {
-    repo.recordAudit(db, asset.id, 'assign', `Registered "${asset.name}" and assigned to ${input.assignedTo}.`);
+    repo.recordAudit(
+      db,
+      asset.id,
+      'create',
+      `Registered "${asset.name}" (recorded assignee: ${input.assignedTo}).`
+    );
   } else {
     repo.recordAudit(db, asset.id, 'create', `Registered "${asset.name}".`);
   }
@@ -48,7 +56,15 @@ function assignAsset(db, id, assignee) {
   const current = repo.getAsset(db, id);
   if (!current) throw makeError('Asset not found.', 'NOT_FOUND');
   assertTransition(current.status, 'assigned');
-  const updated = repo.updateAsset(db, id, { status: 'assigned', assigned_to: assignee.trim() });
+  // FR4.6: record the assignee name AND the assignment timestamp. FR4.7: the
+  // previous return no longer applies once the asset goes back out.
+  const assignedAt = repo.nowIso(db);
+  const updated = repo.updateAsset(db, id, {
+    status: 'assigned',
+    assigned_to: assignee.trim(),
+    assigned_at: assignedAt,
+    returned_at: null,
+  });
   repo.recordAudit(db, id, 'assign', ACTION_DESCRIPTIONS.assign(updated.name, assignee.trim()));
   return updated;
 }
@@ -57,7 +73,13 @@ function returnAsset(db, id) {
   const current = repo.getAsset(db, id);
   if (!current) throw makeError('Asset not found.', 'NOT_FOUND');
   assertTransition(current.status, 'returned');
-  const updated = repo.updateAsset(db, id, { status: 'returned', assigned_to: null });
+  // FR4.7: clear the assignee AND record the return timestamp.
+  const returnedAt = repo.nowIso(db);
+  const updated = repo.updateAsset(db, id, {
+    status: 'returned',
+    assigned_to: null,
+    returned_at: returnedAt,
+  });
   repo.recordAudit(db, id, 'return', ACTION_DESCRIPTIONS.return(updated.name));
   return updated;
 }

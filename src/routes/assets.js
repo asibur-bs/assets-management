@@ -42,8 +42,10 @@ function assetsRouter(db) {
         notes: req.body.notes ? String(req.body.notes).trim() : null,
         assignedTo: req.body.assigned_to ? String(req.body.assigned_to).trim() : null,
       };
-      const asset = service.registerAsset(db, input);
-      res.redirect(`/assets/${asset.id}`);
+      service.registerAsset(db, input);
+      // FR1.4: on successful registration the user is redirected to the asset
+      // LIST view, where the newly registered asset is visible.
+      res.redirect('/assets');
     } catch (err) {
       if (err.code === 'VALIDATION_ERROR' || err.code === 'DUPLICATE_ASSET') {
         return res.status(400).render('new', { values: req.body, errors: [err.message] });

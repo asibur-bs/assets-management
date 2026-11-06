@@ -13,7 +13,8 @@
     "test:repo": "vitest run tests/assets-repo.test.js",
     "test:service": "vitest run tests/asset-service.test.js",
     "test:routes": "vitest run tests/routes.test.js",
-    "test:views": "vitest run tests/views.test.js"
+    "test:views": "vitest run tests/views.test.js",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
@@ -21,6 +22,7 @@
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
     "supertest": "^7.0.0",
     "vitest": "^2.1.2"
   },
