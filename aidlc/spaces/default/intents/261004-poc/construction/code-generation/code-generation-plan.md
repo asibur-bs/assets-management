@@ -18,29 +18,93 @@ This plan implements the asset-tracking web application described in `aidlc/spac
 
 | Requirement | Plan Step(s) |
 |-------------|---------------|
-| FR1 (registration) | Steps 4, 6, 8, 10, 12 |
+| FR1 (registration) | Steps 4, 6, 8, 10, 12, 16 |
 | FR2 (list view) | Steps 4, 8, 10, 12 |
-| FR3 (detail view) | Steps 4, 8, 10, 12 |
-| FR4 (lifecycle) | Steps 5, 7, 9, 10, 12 |
+| FR3 (detail view) | Steps 4, 8, 10, 12, 19, 20, 21 |
+| FR4 (lifecycle) | Steps 5, 7, 9, 10, 12, 15, 17 |
 | FR5 (audit) | Steps 5, 7, 10, 12 |
-| NFR1–NFR7 | Steps 1, 13, 14 |
+| NFR1–NFR7 | Steps 1, 13, 14, 21 |
+
+## Requirement-Conformance Corrections
+
+An earlier pass already wrote the workspace files listed in
+`source-manifest.json`. That pass did not satisfy every requirement in
+`requirements.md`, so Step 4 is a conformance pass over the existing code, not
+a greenfield write. Each item below names the requirement, what the current
+code does, and the behaviour the implementation must have.
+
+| Requirement | Current code | Required behaviour |
+|-------------|---------------|--------------------|
+| FR1.5 | `assets-repo.js` sets `status = 'assigned'` when `assignedTo` is supplied, so a registered asset can start outside `in-stock` | Every newly registered asset is persisted with `status = 'in-stock'`, a UUID, and timestamps. An optional `assigned-to` is stored as a field only; it does not change the state |
+| FR1.4 | `routes/assets.js` redirects to `/assets/:id` (the detail view) after a successful registration | Redirect to the asset LIST view, with the new asset visible in it |
+| FR4.6 | `assets` table has no assignment-timestamp column | Assigning records the assignee name and the assignment timestamp |
+| FR4.7 | `assets` table has no return-timestamp column | Returning clears the assignee and records the return timestamp |
+
+Two supporting corrections follow from the above:
+
+- `tests/asset-service.test.js` currently asserts that a registration with an
+  assignee yields `status = 'assigned'`. That assertion encodes the FR1.5
+  violation and must be replaced with one asserting `in-stock`.
+- The schema change (assignment and return timestamp columns) is a migration on
+  the existing `assets` table, not a fresh table definition, so a database
+  created by the earlier pass still works.
+
+Not in scope for this pass: the `poc` scope carries no coverage floor, and the
+existing suite must stay green after these corrections.
+
+## Build-and-Test Repair Corrections (loop-back 1)
+
+Build and Test (3.6) verified the code and found one applicable target —
+**T-FR3.3** — **Not Met**, plus two inaccurate traceability notes. The
+diagnosis is recorded in
+`../build-and-test/test-results.md` (Loop-Back Log, entry 1) and in
+`../build-and-test/cross-unit-traceability.md` (Findings 1 and 2). This
+replayed attempt applies those repairs. The state machine in
+`src/services/asset-service.js` is already correct — `returned → {assigned,
+lost}` — so the defect is view-only.
+
+| Requirement | Current code | Required behaviour |
+|-------------|---------------|--------------------|
+| FR3.3 | `views/detail.ejs` merges the `assigned` and `returned` states into one branch, so a `returned` asset renders the "Mark returned" form. The POST is rejected with HTTP 400 because `returned → returned` is not in the FR4.4 transition set | The action forms offered on the detail view must match the asset's current state, and every offered action must be a valid transition. A `returned` asset offers "Mark lost" and "Re-assign" only — never "Mark returned" |
+| FR3.3 (test) | `tests/views.test.js` covers the `in-stock`, `assigned`, and `lost` states but has no `returned`-state case, which is why the suite stayed green | Add a `returned`-state view test asserting that `action-return` is absent and that `action-lost` and `action-reassign` are present |
+| FR3.3 (traceability) | `traceability.json` records FR3.3 with status `OK` and the note "The actions section renders the assign / return / mark-lost forms for the current state" — inaccurate for the `returned` state | Correct the note to describe the per-state form set accurately |
+| NFR2 (traceability) | `traceability.json` records NFR2 with status `OK` and the note "**Indexed** search over name and serial_or_key returns a filtered list on request" — there is no index on `name` or `serial_or_key`, and the pattern is a leading-wildcard `LIKE` that would not use a B-tree index anyway | Correct the note to "Case-insensitive search over name and serial_or_key returns a filtered list on request", and record that no supporting index exists because the pattern is a leading-wildcard `LIKE` |
+
+**Scope of the NFR2 repair.** The NFR2 requirement itself is met — it is a
+user-perception bound ("locatable in 5 seconds or fewer"), not an indexing
+requirement, and it holds for a `poc`-sized dataset. Only the *note* is
+inaccurate. Adding a real index would require SQLite FTS5 or a trigram table
+(a plain B-tree index does not accelerate a leading-wildcard `LIKE`), which
+materially expands the `poc` scope and touches every developer's existing
+database via a migration. The **note correction** is therefore the selected
+repair; no schema change and no index is added.
+
+The `poc` scope carries no coverage floor, and the existing suite must stay
+green after these repairs.
 
 ## Plan Steps
 
-- [ ] Step 1: Project structure and production configuration skeleton.
-- [ ] Step 2: Bootstrap the minimal test runner/configuration (Vitest) and record the exact unit-scoped command.
-- [ ] Step 3: Data model / database behavior — implement (schema, migrations, audit table).
-- [ ] Step 4: Data model / database behavior — write and run its tests after implementation.
-- [ ] Step 5: Repository / data access — implement (`assets`, `audit_log` repositories).
-- [ ] Step 6: Repository / data access — write and run its tests after implementation.
-- [ ] Step 7: Business logic — implement (asset lifecycle state machine, audit emission).
-- [ ] Step 8: Business logic — write and run its tests after implementation.
-- [ ] Step 9: API / endpoint — implement (Express routes for register, list, detail, assign, return, mark-lost).
-- [ ] Step 10: API / endpoint — write and run its tests after implementation (super-test).
-- [ ] Step 11: Frontend behavior — implement (EJS templates: list, new, detail, _layout, partials).
-- [ ] Step 12: Frontend behavior — write and run its tests after implementation (HTTP smoke tests against routes; data-testid attributes on interactive elements).
-- [ ] Step 13: Environment/build configuration (README, package.json scripts, .gitignore).
-- [ ] Step 14: Documentation and traceability (`source-manifest.json`, `traceability.json`, `code-summary.md`).
+- [x] Step 1: Project structure and production configuration skeleton.
+- [x] Step 2: Bootstrap the minimal test runner/configuration (Vitest) and record the exact unit-scoped command.
+- [x] Step 3: Data model / database behavior — implement (schema, migrations, audit table).
+- [x] Step 4: Data model / database behavior — write and run its tests after implementation.
+- [x] Step 5: Repository / data access — implement (`assets`, `audit_log` repositories).
+- [x] Step 6: Repository / data access — write and run its tests after implementation.
+- [x] Step 7: Business logic — implement (asset lifecycle state machine, audit emission).
+- [x] Step 8: Business logic — write and run its tests after implementation.
+- [x] Step 9: API / endpoint — implement (Express routes for register, list, detail, assign, return, mark-lost).
+- [x] Step 10: API / endpoint — write and run its tests after implementation (super-test).
+- [x] Step 11: Frontend behavior — implement (EJS templates: list, new, detail, _layout, partials).
+- [x] Step 12: Frontend behavior — write and run its tests after implementation (HTTP smoke tests against routes; data-testid attributes on interactive elements).
+- [x] Step 13: Environment/build configuration (README, package.json scripts, .gitignore).
+- [x] Step 14: Documentation and traceability (`source-manifest.json`, `traceability.json`, `code-summary.md`).
+- [x] Step 15: Conform the schema to FR4.6/FR4.7 — add assignment and return timestamp columns to `assets` as a migration over the existing table.
+- [x] Step 16: Conform registration to FR1.5/FR1.4 — always persist a new asset as `in-stock`, store `assigned-to` as a field only, and redirect to the asset list view after a successful registration.
+- [x] Step 17: Conform the lifecycle actions to FR4.6/FR4.7 — record the assignment timestamp on assign and the return timestamp on return.
+- [x] Step 18: Correct the test suite — replace the assertion that encodes the FR1.5 violation, and add coverage for the assignment and return timestamps.
+- [x] Step 19: Repair FR3.3 in the detail view — split the `assigned` / `returned` branch in `views/detail.ejs` so a `returned` asset renders only the "Mark lost" and "Re-assign" forms, never the "Mark returned" form. The state machine in `src/services/asset-service.js` is unchanged.
+- [x] Step 20: Add the `returned`-state view test — assert that `data-testid="action-return"` is absent for a `returned` asset and that `data-testid="action-lost"` and `data-testid="action-reassign"` are present, closing the coverage gap that let the defect through.
+- [x] Step 21: Correct the traceability notes — fix the FR3.3 note in `traceability.json` to describe the per-state form set accurately, and fix the NFR2 note to drop the unsupported "Indexed" claim and record the absence of a supporting index.
 
 ## Testing Contract
 
@@ -109,10 +173,7 @@ The full contract from `aidlc engine testing-posture render --stage-level` is pa
 
 ## Plan Approval
 
-[Approval Fingerprint]: sha256:v3:a44ec315b9967f76c1d3db281550ebe93b486a13ca74342db5c912da22beb515
-[Planned Source]: 81ac1982cdedaad24d9fd8abf620ecc0a2c5e0a2bb82b13f09a52a01bc865a0d
-
-- Approve Plan
-- Request Changes
-
-[Answer]: Approve Plan
+Presented in `code-generation-questions.md`. The approval tags and the human's
+answer are recorded there, not here: this file is the stage's review artifact
+and its content is bound by the approval fingerprint, so writing a fingerprint
+into it would change the value it is supposed to state.
