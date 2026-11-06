@@ -5,5 +5,12 @@
     "dirName": "261004-poc",
     "scope": "poc",
     "status": "complete"
+  },
+  {
+    "uuid": "01a1b05f-a74e-76c0-b40f-f9c8d3e1dfb7",
+    "slug": "asset-tracker-mvp",
+    "dirName": "261106-asset-tracker-mvp",
+    "scope": "mvp",
+    "status": "in-flight"
   }
 ]
