@@ -4,12 +4,14 @@
 **Baseline:** Asset Tracker POC (`aidlc/spaces/default/intents/261004-poc`, workflow complete)
 **Companions:** `gap-analysis.md` (`32af9e9`), `decision-brief.md` (`5f2a464`) — both unchanged
 
-**Status:** 🔴 **NOTHING HERE IS APPROVED.** This document presents options and recommendations for
-your review. No decision has been recorded as a requirement. No AIDLC intent was created. No POC
-code, database, test, or configuration was modified. The committed gap analysis and decision brief
-are untouched. The 66/66 passing test suite remains the baseline.
+**Status:** 🟡 **PARTIALLY APPROVED — 2 of 17 items.** Q1 (D1a) is **APPROVED**. Q10 (Q10-iv) is
+**APPROVED IN PRINCIPLE**, conditioned on the concurrency-safety requirement documented in §7.1.6.
+The remaining 15 items (A, B, C, D1/D2/D3, Q2–Q9, Q11, Q12) are **PENDING** — options and
+recommendations are presented for review and are **not** recorded as requirements. No AIDLC intent
+was created. No POC code, database, test, or configuration was modified. The committed gap analysis
+and decision brief are untouched. The 66/66 passing test suite remains the baseline.
 
-**Date:** 2026-11-06
+**Date:** 2026-11-06 · **Amended:** 2026-11-06 (Q1/Q10 confirmed; concurrency-safety section added)
 
 ---
 
@@ -721,8 +723,132 @@ If the index succeeds, both layers are active. If it is skipped, the application
 Decision A's acceptance criteria anyway**, and it is the mechanism that delivers MVP-12's "link to
 the conflicting asset". Q10-iv therefore costs almost nothing beyond what A already requires.
 
+#### Concurrency safety of the application-level check
+
+**Requirement (added 2026-11-06, confirmed by the human):** the application-level duplicate check
+must be concurrency-safe. A check-before-insert alone is insufficient if concurrent requests can
+create duplicate records. The transaction/locking strategy and its limitations must be documented.
+
+The requirement is correct. The reason it is insufficient is narrower than it first appears, and
+the correct remedy depends on which deployment topology is in force. Both are established below
+**by execution**, not by inference.
+
+##### What was tested
+
+All tests use the shipped stack — `better-sqlite3` 11.10.0 (SQLite 3.49.2), `journal_mode = WAL` —
+with **8 OS threads** (`node:worker_threads`), each with its own connection, all registering the
+same case-variant serial (`X-1` / `x-1`) in the same category.
+
+| # | Configuration | Rows created | Conflicts detected | Errors | Verdict |
+|---|---|---|---|---|---|
+| 1 | **Check-then-insert, no transaction** | **8** | **0** | 0 | ❌ **RACE — duplicate created** |
+| 2 | **Deferred transaction**, `busy_timeout = 5000` | 1 | 7 | 0 | ✅ safe, but see L2 |
+| 3 | **`IMMEDIATE` transaction**, `busy_timeout = 5000` | 1 | 7 | 0 | ✅ **safe and lossless** |
+| 4 | Deferred transaction, `busy_timeout = 0` | 1 | 6 | 1 | ⚠️ `SQLITE_BUSY` |
+| 5 | `IMMEDIATE` transaction, `busy_timeout = 0` | 1 | 5 | 2 | ⚠️ `SQLITE_BUSY` |
+| 6 | **Functional unique index, no app-level check** | **1** | **7 rejected by the DB** | 0 | ✅ **safe by construction** |
+
+**[verified]** configuration 1 — the naive check-then-insert the requirement warns about — creates
+**all 8 duplicates and detects zero conflicts**:
+
+```
+=== APP-LEVEL CHECK-THEN-INSERT, 8 concurrent workers ===
+inserts attempted: 8
+conflicts detected: 0
+ROWS IN DB (should be 1): 8
+RESULT: RACE - DUPLICATE CREATED
+```
+
+**[verified]** configuration 3 closes it completely — one insert, seven conflicts, no errors:
+
+```
+=== IMMEDIATE-TRANSACTION check+insert, 8 concurrent workers ===
+inserted: 1
+conflict: 7
+ROWS IN DB (should be 1): 1
+RESULT: SAFE (transaction serializes the check+insert)
+```
+
+**[verified]** configuration 6 shows the functional index is **structurally immune** to this race:
+the uniqueness constraint is evaluated inside the write transaction by SQLite itself, so there is no
+gap between the check and the write for another writer to slip into.
+
+##### The strategy
+
+**The application-level check must run inside an `IMMEDIATE` transaction, on a connection with
+`busy_timeout` set, and must treat a `SQLITE_BUSY` failure as a retryable error rather than
+silently succeeding or crashing.**
+
+In `better-sqlite3` terms:
+
+```js
+const register = db.transaction((input) => {
+  const conflict = db.prepare(
+    `SELECT id, name, serial_or_key FROM assets
+      WHERE category = ? AND lower(trim(serial_or_key)) = lower(trim(?))`
+  ).get(input.category, input.serialOrKey);
+  if (conflict) throw duplicateError(conflict);   // DUPLICATE_ASSET, carrying the conflicting id
+  return insertRow(input);
+});
+register.immediate();   // <-- IMMEDIATE, not the default DEFERRED
+```
+
+Two details are load-bearing and both were verified above:
+
+- **`.immediate()` rather than the default `.deferred()`.** A deferred transaction takes a read lock
+  at `BEGIN` and only escalates to a write lock at the first write. Between the `SELECT` and the
+  `INSERT`, two transactions can both hold a read lock, both see no conflict, and both attempt the
+  upgrade — SQLite resolves one by failing it with `SQLITE_BUSY`. `IMMEDIATE` takes the write lock
+  up front, so the read and the write are serialized by the database rather than by application
+  logic.
+- **`busy_timeout` must be non-zero.** The POC's `openDatabase` (`src/db/index.js:15-16`) sets
+  `journal_mode = WAL` and `foreign_keys = ON` but **does not set `busy_timeout`**. SQLite's
+  default is `0`, meaning a blocked writer fails **immediately** rather than waiting. Configurations
+  4 and 5 show the consequence: `SQLITE_BUSY` errors reach the caller and legitimate registrations
+  are lost. Configuration 3 (`IMMEDIATE` + `busy_timeout = 5000`) is the only lossless one.
+
+##### Limitations — stated explicitly
+
+| # | Limitation | Consequence / mitigation |
+|---|---|---|
+| **L1** | **`busy_timeout` is not currently set on the POC connection.** `src/db/index.js:15-16` sets `journal_mode` and `foreign_keys` only. | **Must be added.** Until it is, the transaction serializes correctly but concurrent writers are failed with `SQLITE_BUSY` rather than waited on. A one-line change to `openDatabase`, in scope for the MVP. |
+| **L2** | **`SQLITE_BUSY` is still possible even with `busy_timeout` set**, if the lock is held longer than the timeout. | Must be caught and mapped to a retryable error response, not a 500. The MVP's error contract (`src/app.js:17-24`) has no busy/retry code today — one must be added. |
+| **L3** | **The `IMMEDIATE` transaction serializes writers against each other.** It is a write lock held for the duration of the check+insert. | The critical section is short (one indexed `SELECT` + one `INSERT`), so contention is bounded. Registration throughput is limited by write-lock acquisition, not CPU. At MVP scale this is not a concern — a scaling note, not a defect. |
+| **L4** | **The application layer covers only writes that go through the application.** A direct SQL write is not covered by the app-level check. | This is exactly why the functional index (Q10-iv layer 2) is retained as defence-in-depth. When the index is present both layers are active; when it is skipped only layer 1 is. |
+| **L5** | **The current deployment topology masks the race entirely.** The POC is a **single Node process with a single `better-sqlite3` connection** (`src/server.js:12-15` → `createApp(db)`), and `better-sqlite3` is **fully synchronous**. | **[verified]** under 100 concurrent requests on that exact topology the result is 1 row and 99 conflicts — the race **cannot** occur, because a synchronous function body cannot be interleaved by the event loop. **This safety is an accident of the current architecture, not a property of the check.** It disappears the moment a second connection, a second process, a worker pool, or an async driver is introduced. The check must therefore be built correctly rather than rely on the topology. |
+| **L6** | **The functional index and the application check must use the identical normalization expression** (`lower(trim(...))`), or they can disagree. | Both must be derived from **one shared constant**, not written twice. A test must assert the index expression and the application predicate are textually identical, so a future change to one cannot silently diverge from the other. |
+| **L7** | **A concurrent `UPDATE` to an existing asset's serial has the same race** as registration. | The same `IMMEDIATE` transaction must wrap the update path, not only the insert path. |
+| **L8** | **The uniqueness rule is category-scoped (Decision A-i).** Two assets with the same serial in *different* categories are legal. | Concurrency safety is per-`(category, normalized-serial)` pair. The lock is global (SQLite has no row-level locks), so it is conservative — stricter than the rule requires, which is safe. |
+
+##### Effect on the recommended strategy
+
+**Q10-iv stands, and is strengthened.** The belt-and-braces model is now precisely specified:
+
+| Layer | Enforcement | Concurrency behaviour |
+|---|---|---|
+| Application check (always on) | `IMMEDIATE` transaction + `busy_timeout` + `SQLITE_BUSY` handling | Serialized by the database; **race-free** |
+| Functional index (best-effort) | SQLite uniqueness constraint | **Structurally race-free** |
+
+The functional index remains the stronger guarantee because it needs no cooperation from the caller.
+The application layer becomes race-free rather than *merely* present, which is what the added
+requirement asks for. **Neither layer is weakened by the other.**
+
+**One consequence worth flagging:** because the index is skipped only when pre-existing conflicts
+exist, and the application check is the fallback in that case, the application check is on the
+critical path for **every** registration regardless of whether the index exists. The `IMMEDIATE`
+transaction is therefore not optional hardening — it is required for Q10-iv to hold its "no gap"
+claim.
+
 #### Acceptance criteria for Q10
 
+- [ ] The application-level duplicate check runs inside an `IMMEDIATE` transaction, not a deferred one.
+- [ ] The database connection sets a non-zero `busy_timeout`.
+- [ ] `SQLITE_BUSY` is caught and mapped to a retryable error response; it is never surfaced as an unhandled failure or a silent success.
+- [ ] The duplicate check and the insert execute within the same transaction, with no code path that separates them.
+- [ ] The update path uses the same transactional wrapper as the insert path.
+- [ ] A concurrency test asserts that N simultaneous registrations of the same case-variant serial produce exactly one asset and N-1 `DUPLICATE_ASSET` errors.
+- [ ] The concurrency test passes with the functional index absent, proving the application layer stands alone.
+- [ ] The index expression and the application predicate are derived from a single shared constant, and a test asserts they are textually identical.
 - [ ] The migration runs the detection query before attempting index creation.
 - [ ] If conflicts exist, the migration reports them (ids, names, original serial values) and **does not create the index**.
 - [ ] The migration **never modifies an existing asset record** to resolve a conflict.
@@ -773,12 +899,12 @@ retirement-specific values ("written off", "returned to vendor", "donated", "oth
 ## 8. Consolidated decision matrix
 
 | ID | Question | Recommended | Alternatives | Coupled to |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **A** | Serial uniqueness scope | **A-i** — category-scoped + case-insensitive via functional index | A-ii stored normalised col · A-iii app-only · A-iv globally unique | Q10 |
 | **B** | Lost asset recovery | **B-ii** — `lost → in-stock` + preserve holder + loss reason | B-i terminal · B-iii `lost → assigned` | D, C, Q4, Q9 |
 | **C** | Inventory counting | **C-i** — 5 exclusive buckets + Active Inventory + Total Records, one shared function | C-ii total-includes-discarded · C-iii active-only · C-iv overlapping | Q1, D, B |
 | **D** | Lifecycle transitions | **D1a** (returned is a resting state) + **D2b** (assigned→discarded resolves inline) + D3 edges | D1b transient · D2a · D2c · per-edge variants | Q1, B, C |
-| **Q1** | Returned vs In Stock | **D1a** | D1b | D, C, §4.1 amendment |
+| **Q1** | Returned vs In Stock | ✅ **APPROVED — D1a** | D1b | D, C, §4.1 amendment |
 | **Q2** | Pre-MVP audit rows in the 100% metric | **Q2-i** — excluded, `system` backfill | Q2-ii counted · Q2-iii NULL actor | — |
 | **Q3** | `assigned-to` on registration | **Q3-i** — remove | Q3-ii keep as plain field · Q3-iii perform assignment | — |
 | **Q4** | Recovery requires a reason | **Q4-ii** — yes | Q4-i no · Q4-iii optional | B |
@@ -787,15 +913,23 @@ retirement-specific values ("written off", "returned to vendor", "donated", "oth
 | **Q7** | `in-stock → lost` permitted | **Q7-i** — yes, with reason | Q7-ii no · Q7-iii no reason | D, Q12 |
 | **Q8** | Design gate consolidation | **Q8-i** — merge 1+2 and 3+4 | Q8-ii all separate · Q8-iii merge all four | — |
 | **Q9** | Lost-asset backfill attempted | **Q9-i** — optional, never fails | Q9-ii no · Q9-iii mandatory | B |
-| **Q10** | Pre-existing case-variant duplicates | **Q10-iv** — belt-and-braces: app layer always + index best-effort, detect-and-skip, never modify | Q10-i detect-and-abort · Q10-ii detect-and-skip alone · Q10-iii auto-remediate ❌ | A |
+| **Q10** | Pre-existing case-variant duplicates | ✅ **APPROVED IN PRINCIPLE — Q10-iv** + concurrency-safe app check | Q10-i detect-and-abort · Q10-ii detect-and-skip alone · Q10-iii auto-remediate ❌ | A |
 | **Q11** | Audit action naming | **Q11-i** — past-tense hyphenated, with mapping | Q11-ii bare verbs · Q11-iii noun forms | — |
 | **Q12** | Discard reason required | **Q12-i** — always | Q12-ii optional · Q12-iii conditional | D |
+
+**Confirmation status as of 2026-11-06:** Q1 and Q10 are **APPROVED**. All 15 remaining items (A, B,
+C, D1/D2/D3, Q2–Q9, Q11, Q12) remain **PENDING** and are not recorded as requirements. Q10's
+approval is *in principle* and is conditioned on the concurrency-safety requirement now documented
+in §7.1.6.
 
 ---
 
 ## 9. Recommended combination and why it is the right fit
 
 **Recommended set: A-i · B-ii · C-i (+ C-i-M1) · D1a + D2b + D3 · Q1=D1a · Q2-i · Q3-i · Q4-ii · Q5-i · Q6-i · Q7-i · Q8-i · Q9-i · Q10-iv · Q11-i · Q12-i**
+
+**Confirmed so far:** Q1 (D1a) and Q10 (Q10-iv, in principle). The remaining 15 items are
+recommendations awaiting your confirmation.
 
 ### 9.1 Why this combination is the right fit for the MVP
 
@@ -912,18 +1046,54 @@ Q1 → D1a/D1b → B ↔ Q4 ↔ Q7 ↔ Q12 → C (+ C-i-M1) → A ↔ Q10
 
 ## 12. What I need from you
 
-**A single option letter per item** — from §8's matrix. Partial approval is fine: some confirmed,
-some revised, some left open.
+### Already confirmed (2026-11-06)
 
-**The two I'd most like your attention on:**
+- ✅ **Q1 = D1a.** `Returned` remains a distinct resting state; returned assets remain eligible for
+  reassignment; the Returned count stays meaningful; an **Available to Assign = In Stock + Returned**
+  metric is added; workbook §4.1 and the dashboard/lifecycle/acceptance criteria are updated; and
+  **existing records are not rewritten by the migration**.
+- ✅ **Q10 = Q10-iv, approved in principle.** Detect with the normalized comparison; report every
+  conflicting group with affected asset IDs and original values; never automatically modify existing
+  records; skip functional-index creation when conflicts exist; use the application-level fallback
+  and **report the index as skipped** rather than silently treating it as created.
+- ✅ **Additional requirement — concurrency safety of the application-level check.** Documented in
+  §7.1.6 with six executed configurations, the `IMMEDIATE`-transaction + `busy_timeout` strategy,
+  and eight explicitly stated limitations (L1–L8).
 
-- **Q1 / D1a** — the largest single decision. It determines the dashboard's shape, the transition
-  table, whether ~8 existing tests are rewritten, and **whether your §4.1 needs amending**. I
-  recommend D1a because D1b leaves a permanently empty card in your own Screen 01.
-- **Q10-iv** — the most operationally consequential. It involves real data that may already exist
-  on your machine. The key principle: **the migration must never modify an existing asset record,
-  and must never fail because of one.** The application layer enforces the rule regardless, so
-  there is no integrity gap either way.
+### Still needed — a single option letter per remaining item
+
+From §8's matrix: **A, B, C, D1, D2, D3, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q11, Q12** — 16 items.
+Partial approval is fine: some confirmed, some revised, some left open.
+
+**How the two confirmed decisions constrain the rest:**
+
+- **Q1 = D1a** ⇒ C-i's five-bucket model is confirmed in shape (5 buckets, not 4), and the
+  **C-i-M1 mitigation is mandatory**, not optional — the Returned card must be labelled and the
+  Available-to-Assign metric added, or the dashboard under-reports availability. §11 lists the
+  six affected workbook locations.
+- **Q1 = D1a** ⇒ D's transition table must include `returned → assigned` and `returned → lost`,
+  and **§4.1's arrow and §21.1 Scenario 3 require amendment** (mandatory — spec and
+  implementation must not disagree).
+- **Q1 = D1a** ⇒ the workbook's §9 Screen 01 must show the Returned card *and* Active Inventory
+  *and* Total Records *and* the Available-to-Assign sub-metric. **C is now effectively
+  constrained**, though the exact headline-figure split is still yours.
+- **Q10-iv** ⇒ **A must be A-i.** A-iv (globally unique) is incompatible with Q10-iv's
+  never-modify-a-record rule, because a pre-existing legal cross-category duplicate would fail the
+  rebuild outright. A-i also requires the shared normalization constant (L6).
+- **Q10-iv** ⇒ the **application-level check is on the critical path for every registration**,
+  whether or not the index exists. The `IMMEDIATE` transaction is therefore required, not optional
+  hardening.
+
+**The two I'd most like your attention on next:**
+
+- **B (lost asset recovery)** — the strongest single argument in the review. The POC's
+  `markLost` **destroys the previous holder**; the only surviving trace is the prose string
+  `"HW" marked as lost.` "Who had it when it went missing" is unanswerable today. B-ii fixes it
+  with one transition and one column. B-i is free but permanently orphans found assets.
+- **D2b** (`assigned → discarded` resolving the assignment inline) — the recommendation is
+  **D2b over D2a specifically because D2a corrupts the audit trail**: it would force an admin to
+  record a return for an asset the employee still physically holds. D2b also depends on **Q12**
+  (whether a discard always requires a reason).
 
 **Two items I added since the decision brief**, both small but they affect the schema and should be
 settled before the audit migration is written: **Q11** (audit action naming — the POC's four values
@@ -1012,6 +1182,61 @@ console.log(db.prepare('SELECT status, COUNT(*) c FROM assets GROUP BY status').
 console.log(db.prepare(\"SELECT assigned_to, COUNT(*) c FROM assets WHERE status='assigned' AND assigned_to IS NOT NULL GROUP BY assigned_to\").all());
 "
 ```
+
+**A.8 — Concurrency: the naive check-then-insert races (§7.1.6, configuration 1)**
+
+Eight `node:worker_threads` threads, each with its own connection, all registering `X-1`/`x-1` in
+the same category. Reproduce with the harness in §7.1.6, `mode = 'none'`:
+
+```
+=== APP-LEVEL CHECK-THEN-INSERT, 8 concurrent workers ===
+inserts attempted: 8
+conflicts detected: 0
+ROWS IN DB (should be 1): 8
+RESULT: RACE - DUPLICATE CREATED
+```
+
+**A.9 — Concurrency: `IMMEDIATE` transaction + `busy_timeout` closes it (configuration 3)**
+
+Same harness, `mode = 'immediate'`, `busy_timeout = 5000`:
+
+```
+=== IMMEDIATE-TRANSACTION check+insert, 8 concurrent workers ===
+inserted: 1
+conflict: 7
+ROWS IN DB (should be 1): 1
+RESULT: SAFE (transaction serializes the check+insert)
+```
+
+**A.10 — Concurrency: the functional index is structurally race-free (configuration 6)**
+
+Same harness, with `CREATE UNIQUE INDEX ... lower(trim(serial_or_key))` and no app-level check:
+
+```
+=== FUNCTIONAL INDEX, 8 concurrent workers (no app-level check) ===
+inserted: 1
+rejected by constraint: 7
+errors: 0
+ROWS (should be 1): 1
+RESULT: SAFE - DB index is immune to the race
+```
+
+**A.11 — The current single-connection topology masks the race (limitation L5)**
+
+100 concurrent requests on the POC's actual topology (one process, one synchronous
+`better-sqlite3` connection):
+
+```
+=== POC ACTUAL TOPOLOGY: 100 concurrent requests, one synchronous connection ===
+inserted: 1
+conflict: 99
+ROWS (should be 1): 1
+RESULT: SAFE within a single process - synchronous driver serializes it
+```
+
+The race does not occur here because `better-sqlite3` is fully synchronous and a synchronous
+function body cannot be interleaved by the event loop. **This is a property of the topology, not of
+the check** — it disappears with a second connection, a second process, or an async driver.
 
 ---
 
