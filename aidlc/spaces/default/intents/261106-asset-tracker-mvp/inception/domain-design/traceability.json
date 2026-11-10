@@ -1,0 +1,247 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": [
+    "US0.1",
+    "US1.1",
+    "US1.2",
+    "US1.3",
+    "US1.4",
+    "US2.1",
+    "US2.2",
+    "US3.1",
+    "US3.2",
+    "US3.3",
+    "US3.4",
+    "US3.5",
+    "US3.6",
+    "US3.7",
+    "US4.1",
+    "US4.2",
+    "US4.3",
+    "US5.1",
+    "US5.2",
+    "US5.3",
+    "US5.4",
+    "US5.5",
+    "US5.6",
+    "US5.7",
+    "US6.1",
+    "US6.2",
+    "US6.3",
+    "US6.4",
+    "US7.1",
+    "US7.2",
+    "US8.1",
+    "US8.2",
+    "US8.3",
+    "US8.4",
+    "US8.5",
+    "US8.6",
+    "US8.7",
+    "US8.8",
+    "US8.9",
+    "US8.10"
+  ],
+  "coverage": [
+    {
+      "id": "US0.1",
+      "status": "OK",
+      "target": "SchemaMigration — the rebuild of audit_log before assets, then the re-added foreign key, with the backfill inside the same migration"
+    },
+    {
+      "id": "US1.1",
+      "status": "OK",
+      "target": "AssetRegistration, AssetFormScreen — registration creates the asset and its first audit entry in one transaction, with no assignee field"
+    },
+    {
+      "id": "US1.2",
+      "status": "OK",
+      "target": "UniquenessCheck, DomainVocabulary — one normalisation predicate shared with the database's functional unique index"
+    },
+    {
+      "id": "US1.3",
+      "status": "OK",
+      "target": "UniquenessCheck, SchemaMigration — the functional unique index rebuilt by the migration, with the violation detected by err.code"
+    },
+    {
+      "id": "US1.4",
+      "status": "OK",
+      "target": "UniquenessCheck, DatabaseConnection, ErrorTranslation — the IMMEDIATE transaction discipline, the non-zero busy_timeout owned by the connection component, and the SQLITE_BUSY mapping to a retryable code"
+    },
+    {
+      "id": "US2.1",
+      "status": "OK",
+      "target": "AssetLifecycle — the in-stock to assigned edge, with the assign audit action"
+    },
+    {
+      "id": "US2.2",
+      "status": "OK",
+      "target": "AssetLifecycle — the assigned to returned edge, with the return audit action"
+    },
+    {
+      "id": "US3.1",
+      "status": "OK",
+      "target": "AssetLifecycle, DomainVocabulary — the transition table holding exactly the eight released edges, with discarded terminal"
+    },
+    {
+      "id": "US3.2",
+      "status": "OK",
+      "target": "AssetLifecycle, AssetDetailScreen, ScreenPresenter — the loss edges and the reason dialog they open"
+    },
+    {
+      "id": "US3.3",
+      "status": "OK",
+      "target": "DomainVocabulary — the shared loss-reason vocabulary with its retirement-specific values"
+    },
+    {
+      "id": "US3.4",
+      "status": "OK",
+      "target": "AssetLifecycle, AssetRepository, Asset — the assigned to discarded edge resolving the assignment inline, retaining last_assigned_to"
+    },
+    {
+      "id": "US3.5",
+      "status": "OK",
+      "target": "AssetLifecycle — the lost to in-stock recovery edge, recorded as the distinct recovered audit action"
+    },
+    {
+      "id": "US3.6",
+      "status": "OK",
+      "target": "DomainVocabulary, AuditRepository — the audit action vocabulary of exactly seven actions"
+    },
+    {
+      "id": "US3.7",
+      "status": "OK",
+      "target": "ScreenPresenter, AssetDetailScreen — the reason dialog's consequence paragraph rendered from the asset's current status"
+    },
+    {
+      "id": "US4.1",
+      "status": "OK",
+      "target": "AssetHistory, AuditRepository — the full ordered history sequence, newest first, not a single latest entry"
+    },
+    {
+      "id": "US4.2",
+      "status": "OK",
+      "target": "AuditRepository, SchemaMigration, AssetLifecycle, ErrorTranslation — the append-only entry points, the database-level BEFORE UPDATE and BEFORE DELETE triggers, and the refusal of a delete against an asset row with the delete-refusal code"
+    },
+    {
+      "id": "US4.3",
+      "status": "OK",
+      "target": "AssetEditing, AuditRepository — the edit's audit entry appended in the same transaction as the asset update"
+    },
+    {
+      "id": "US5.1",
+      "status": "OK",
+      "target": "CountingQuery, DomainVocabulary — the one shared counting definition behind every displayed figure"
+    },
+    {
+      "id": "US5.2",
+      "status": "OK",
+      "target": "DashboardScreen, CountingQuery — the reconciliation tiles, the active inventory figure, and the total record count"
+    },
+    {
+      "id": "US5.3",
+      "status": "OK",
+      "target": "HolderDirectoryScreen, AssetQuery, CountingQuery — the holder rows derived from the asset rows, with the per-bucket breakdown, and the searched-population holder figure computed by the one counting component"
+    },
+    {
+      "id": "US5.4",
+      "status": "OK",
+      "target": "AssetListScreen, AssetQuery, CountingQuery — the five filter dimensions the form exposes, the holder dimension the filter state carries, the shown and matching figures, and the results table"
+    },
+    {
+      "id": "US5.5",
+      "status": "OK",
+      "target": "CsvExport — the six-column export, its filename, its content type, and the formula-injection escaping of every string cell"
+    },
+    {
+      "id": "US5.6",
+      "status": "OK",
+      "target": "DomainVocabulary, AssetQuery — the one display-holder definition, with the two holder fields strictly non-falling-back and Unassigned reserved as a distinct designation for never-held assets"
+    },
+    {
+      "id": "US5.7",
+      "status": "OK",
+      "target": "CountingQuery — the figures computed by aggregation in the database rather than from the asset set in memory"
+    },
+    {
+      "id": "US6.1",
+      "status": "OK",
+      "target": "AssetEditing, AssetFormScreen — the editable field set, with status and both holder fields left uneditable"
+    },
+    {
+      "id": "US6.2",
+      "status": "OK",
+      "target": "UniquenessCheck, AssetFormScreen — the inline duplicate warning, answered by the same collision definition as the submit-time check, from the advisory read that takes no write lock"
+    },
+    {
+      "id": "US6.3",
+      "status": "OK",
+      "target": "UniquenessCheck, AssetFormScreen — the submit-time collision block naming and linking the existing asset, with exactly two ways forward"
+    },
+    {
+      "id": "US6.4",
+      "status": "OK",
+      "target": "AssetFormScreen, AssetRegistration — the registration form with no assignee field"
+    },
+    {
+      "id": "US7.1",
+      "status": "OK",
+      "target": "ActorResolver, AuditRepository — the actor resolved from trusted server-side context, with a request-supplied actor ignored"
+    },
+    {
+      "id": "US7.2",
+      "status": "OK",
+      "target": "ScreenPresenter, AssetDetailScreen, AssetFormScreen — the accessible rendering of the five screens and the reason dialog"
+    },
+    {
+      "id": "US8.1",
+      "status": "Deferred",
+      "target": "AssetLifecycle — the recovery family's attachment point; the single lost to in-stock edge is released by US3.5 and this item extends it to partial recovery"
+    },
+    {
+      "id": "US8.2",
+      "status": "Deferred",
+      "target": "AssetLifecycle — the recovery family's attachment point; attributing a recovered asset's value to a person or cost centre has no released component"
+    },
+    {
+      "id": "US8.3",
+      "status": "Deferred",
+      "target": "AssetHistory — the recovery family's attachment point; a contested claim over who held an asset has no released component"
+    },
+    {
+      "id": "US8.4",
+      "status": "Deferred",
+      "target": "AssetLifecycle, DomainVocabulary — the transition table's attachment point; the in-stock to discarded edge is refused by the released table and joins it here"
+    },
+    {
+      "id": "US8.5",
+      "status": "Deferred",
+      "target": "AssetLifecycle, DomainVocabulary — the transition table's attachment point; the returned to discarded edge is refused by the released table and joins it here"
+    },
+    {
+      "id": "US8.6",
+      "status": "Deferred",
+      "target": "ScreenPresenter — the presentation layer's attachment point; the release renders from the existing stylesheet's vocabulary and the tokenised system arrives here"
+    },
+    {
+      "id": "US8.7",
+      "status": "Deferred",
+      "target": "ScreenPresenter — the presentation layer's attachment point; the release's three recorded responsive constraints are the starting point for the deferred treatment"
+    },
+    {
+      "id": "US8.8",
+      "status": "Deferred",
+      "target": "AssetQuery — the search dimension's attachment point; the release keeps the existing free-text search over name and serial or key"
+    },
+    {
+      "id": "US8.9",
+      "status": "Deferred",
+      "target": "AssetListScreen — the list's attachment point; the released count lines are the starting point for the deferred pager"
+    },
+    {
+      "id": "US8.10",
+      "status": "Deferred",
+      "target": "ScreenPresenter — the presentation layer's attachment point; the release's zero cases are handled, and the designed empty-state treatment arrives with the design system"
+    }
+  ]
+}
