@@ -1,0 +1,16 @@
+# Local pre-commit gate. Numeric command names fix Lefthook 2.2.2's
+# alphabetical sort when priority is unset. piped: true stops later steps
+# when an earlier step fails.
+pre-commit:
+  piped: true
+  commands:
+    01-secret-scan:
+      run: bash scripts/secret-scan.sh
+    02-lint:
+      run: npm run lint
+    03-test:
+      run: npm test
+    04-coverage:
+      run: npm run test:coverage
+    05-audit:
+      run: npm audit --audit-level=high --omit=dev

@@ -5,7 +5,7 @@ Internal asset-tracking system. Server-rendered web app backed by SQLite.
 ## Quick start
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -20,7 +20,7 @@ npm run test:repo   # repository only
 npm run test:service
 npm run test:routes
 npm run test:views
-npm run test:coverage   # informational coverage report (no floor for the poc)
+npm run test:coverage   # fails when project-wide line coverage is below 80%
 ```
 
 ## What it does
