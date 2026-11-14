@@ -1,0 +1,64 @@
+<% if (collision) { %>
+  <div class="collision" data-testid="collision-block" role="alert">
+    <h2>This serial already exists.</h2>
+    <dl class="details-grid">
+      <dt>Category</dt><dd><%= collision.category %></dd>
+      <dt>Serial</dt><dd><%= collision.serial %></dd>
+      <dt>Asset</dt><dd><%= collision.name %></dd>
+    </dl>
+    <p><%= collision.name %></p>
+    <div class="form-actions">
+      <a class="btn" href="<%= collision.href %>" data-testid="collision-open">Open existing asset</a>
+      <a class="btn" href="#field-serial" data-testid="collision-change-serial">Change the serial</a>
+    </div>
+  </div>
+<% } %>
+<% if (errors && errors.length) { %>
+  <div class="errors" data-testid="errors">
+    <% errors.forEach(function (err) { %>
+      <p data-testid="error-message"><%= err %></p>
+    <% }); %>
+  </div>
+<% } %>
+<form method="post" action="<%= formAction %>" class="form" data-testid="<%= formTestId %>">
+  <% if (hiddenAction) { %>
+    <input type="hidden" name="action" value="<%= hiddenAction %>" />
+  <% } %>
+  <label>
+    Category
+    <select name="category" data-testid="field-category">
+      <% categories.forEach(function (category) { %>
+        <option value="<%= category %>" <%= values.category === category ? 'selected' : '' %>><%= category %></option>
+      <% }); %>
+    </select>
+  </label>
+  <label>
+    Name
+    <input type="text" name="name" required value="<%= values.name || '' %>" data-testid="field-name" />
+  </label>
+  <label>
+    Serial or key
+    <input id="field-serial" type="text" name="serial_or_key" required value="<%= values.serial_or_key || '' %>" data-testid="field-serial" />
+  </label>
+  <% if (warning) { %>
+    <div class="serial-warning" data-testid="serial-warning">
+      <p>A <%= warning.category %> asset with serial "<%= warning.serial %>" already exists.</p>
+      <p><%= warning.name %> — <a href="<%= warning.href %>" data-testid="open-existing-asset">Open existing asset</a></p>
+    </div>
+  <% } %>
+  <label>
+    Model
+    <input type="text" name="model" value="<%= values.model || '' %>" data-testid="field-model" />
+  </label>
+  <label>
+    Notes
+    <textarea name="notes" data-testid="field-notes"><%= values.notes || '' %></textarea>
+  </label>
+  <div class="form-actions">
+    <% if (typeof cancelHref !== 'undefined' && cancelHref) { %>
+      <a class="btn" href="<%= cancelHref %>" data-testid="<%= cancelTestId %>">Cancel</a>
+    <% } %>
+    <button type="submit" class="btn" formmethod="get" formaction="<%= checkAction %>" formnovalidate data-testid="serial-check">Check serial</button>
+    <button type="submit" class="btn primary" data-testid="submit"><%= submitLabel %></button>
+  </div>
+</form>

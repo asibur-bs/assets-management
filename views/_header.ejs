@@ -2,14 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title><%= typeof title !== 'undefined' ? title : 'Asset Tracker' %></title>
 <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="/assets">Asset Tracker</a>
-  <nav>
-    <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
+<a class="skip" href="#main" data-testid="skip-link">Skip to main content</a>
+<% var here = typeof path === 'undefined' ? '' : path; %>
+<% var titleText = typeof pageTitle !== 'undefined' ? pageTitle : 'Asset Tracker'; %>
+<% var kind = typeof headerKind !== 'undefined' ? headerKind : ''; %>
+<div class="shell">
+<aside id="sidebar" class="sidebar">
+  <a class="brand" href="/assets" data-testid="nav-brand">Asset Tracker</a>
+  <nav class="nav" aria-label="Primary">
+    <a class="nav-link" href="/dashboard" data-testid="nav-dashboard" <% if (here === '/dashboard') { %>aria-current="page"<% } %>>Dashboard</a>
+    <a class="nav-link" href="/assets" data-testid="nav-assets" <% if (here === '/assets' || here.indexOf('/assets/') === 0) { %>aria-current="page"<% } %>>Assets</a>
+    <a class="nav-link" href="/holders" data-testid="nav-holders" <% if (here === '/holders') { %>aria-current="page"<% } %>>Holders</a>
   </nav>
+</aside>
+<button type="button" class="backdrop" data-close-sidebar aria-label="Close menu"></button>
+<div class="workspace">
+<header class="topbar">
+  <div class="topbar-start">
+    <button type="button" class="nav-toggle btn" aria-controls="sidebar" aria-expanded="false">Menu</button>
+    <h1<% if (typeof pageTitleTestId !== 'undefined' && pageTitleTestId) { %> data-testid="<%= pageTitleTestId %>"<% } %>><%= titleText %></h1>
+  </div>
+  <div class="topbar-end">
+    <% if (kind === 'assets') { %>
+      <a class="btn" href="/assets/export<%= exportQuery ? '?' + exportQuery : '' %>" data-testid="export-csv">Export CSV</a>
+    <% } %>
+    <% if (kind === 'detail' || kind === 'error') { %>
+      <a class="btn" href="/assets" data-testid="back-to-list">Back to list</a>
+    <% } %>
+    <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
+    <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
+  </div>
 </header>
-<main class="container">
+<main id="main" class="container">

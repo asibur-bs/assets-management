@@ -1,0 +1,7 @@
+<% pageTitle = 'Edit asset — ' + asset.name; headerKind = 'edit'; %>
+<%- include('_header') %>
+<div class="form-page">
+<% cancelHref = '/assets/' + asset.id; cancelTestId = 'cancel-edit'; %>
+<%- include('_asset_form') %>
+</div>
+<%- include('_footer') %>

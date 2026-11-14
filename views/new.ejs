@@ -1,40 +1,7 @@
+<% pageTitle = 'New asset'; headerKind = 'new'; %>
 <%- include('_header') %>
-<h1>New asset</h1>
-<% if (errors && errors.length) { %>
-  <div class="errors" data-testid="errors">
-    <% errors.forEach(function(err) { %>
-      <p data-testid="error-message"><%= err %></p>
-    <% }); %>
-  </div>
-<% } %>
-<form method="post" action="/assets" class="form" data-testid="new-form">
-  <label>
-    Category
-    <select name="category" data-testid="field-category">
-      <option value="hardware" <%= values.category === 'hardware' ? 'selected' : '' %>>Hardware</option>
-      <option value="software-license" <%= values.category === 'software-license' ? 'selected' : '' %>>Software / License</option>
-    </select>
-  </label>
-  <label>
-    Name
-    <input type="text" name="name" required value="<%= values.name || '' %>" data-testid="field-name" />
-  </label>
-  <label>
-    Serial or key
-    <input type="text" name="serial_or_key" required value="<%= values.serial_or_key || '' %>" data-testid="field-serial" />
-  </label>
-  <label>
-    Model
-    <input type="text" name="model" value="<%= values.model || '' %>" data-testid="field-model" />
-  </label>
-  <label>
-    Assigned to (optional)
-    <input type="text" name="assigned_to" value="<%= values.assigned_to || '' %>" data-testid="field-assigned-to" />
-  </label>
-  <label>
-    Notes
-    <textarea name="notes" data-testid="field-notes"><%= values.notes || '' %></textarea>
-  </label>
-  <button type="submit" class="btn primary" data-testid="submit">Create</button>
-</form>
+<div class="form-page">
+<% cancelHref = '/assets'; cancelTestId = 'cancel-new'; %>
+<%- include('_asset_form') %>
+</div>
 <%- include('_footer') %>

@@ -1,5 +1,7 @@
+<% pageTitle = 'Something went wrong'; pageTitleTestId = 'error-title'; headerKind = 'error'; %>
 <%- include('_header') %>
-<h1 data-testid="error-title">Something went wrong</h1>
-<p data-testid="error-message"><%= message %></p>
-<p><a href="/assets">Back to list</a></p>
+<section class="panel">
+  <p data-testid="error-message"><%= message %></p>
+  <p class="muted" data-testid="error-code"><%= code %></p>
+</section>
 <%- include('_footer') %>

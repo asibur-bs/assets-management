@@ -1,53 +1,101 @@
+<% pageTitle = asset.name; pageTitleTestId = 'asset-name'; headerKind = 'detail'; %>
 <%- include('_header') %>
-<h1 data-testid="asset-name"><%= asset.name %></h1>
-<dl class="details-grid" data-testid="asset-fields">
-  <dt>Category</dt><dd><%= asset.category %></dd>
-  <dt>Serial / key</dt><dd><%= asset.serial_or_key %></dd>
-  <dt>Model</dt><dd><%= asset.model || '' %></dd>
-  <dt>Status</dt><dd data-testid="asset-status"><span class="status status-<%= asset.status %>"><%= asset.status %></span></dd>
-  <dt>Assigned to</dt><dd><%= asset.assigned_to || '' %></dd>
-  <dt>Assigned at</dt><dd data-testid="asset-assigned-at"><%= asset.assigned_at || '' %></dd>
-  <dt>Returned at</dt><dd data-testid="asset-returned-at"><%= asset.returned_at || '' %></dd>
-  <dt>Notes</dt><dd><%= asset.notes || '' %></dd>
-  <dt>Created</dt><dd><%= asset.created_at %></dd>
-  <dt>Updated</dt><dd><%= asset.updated_at %></dd>
-</dl>
+<% if (alert) { %>
+  <p class="alert" role="alert" data-testid="transition-alert"><%= alert %></p>
+<% } %>
+<div class="detail-layout">
+  <section class="panel">
+    <p class="sr-only" role="status" data-testid="status-announce"><%= statusLabel(asset.status) %></p>
+    <dl class="details-grid" data-testid="asset-fields">
+      <dt>Status</dt>
+      <dd data-testid="asset-status"><span class="status status-<%= asset.status %>"><%= statusLabel(asset.status) %></span></dd>
+      <dt>Category</dt><dd data-testid="asset-category"><%= asset.category %></dd>
+      <dt>Serial/Key</dt><dd data-testid="asset-serial"><%= showValue(asset.serial_or_key) %></dd>
+      <dt>Model</dt><dd data-testid="asset-model"><%= showValue(asset.model) %></dd>
+      <dt>Holder</dt><dd data-testid="asset-holder"><%= showValue(asset.assigned_to) %></dd>
+      <dt>Last holder</dt><dd data-testid="asset-last-holder"><%= showValue(asset.last_assigned_to) %></dd>
+      <dt>Assigned at</dt><dd data-testid="asset-assigned-at"><%= showValue(asset.assigned_at) %></dd>
+      <dt>Returned at</dt><dd data-testid="asset-returned-at"><%= showValue(asset.returned_at) %></dd>
+      <dt>Created</dt><dd data-testid="asset-created"><%= showValue(asset.created_at) %></dd>
+      <dt>Updated</dt><dd data-testid="asset-updated"><%= showValue(asset.updated_at) %></dd>
+    </dl>
+  </section>
+  <aside class="panel detail-side">
+    <h2>Actions</h2>
+    <% if (asset.status === 'discarded') { %>
+      <p class="muted" data-testid="discarded-note">This asset was discarded. It is no longer part of Active Inventory, but its record and its history are kept.</p>
+    <% } %>
+    <div class="actions" data-testid="actions">
+      <% actions.forEach(function (action) { %>
+        <% if (action.action === 'assign') { %>
+          <form method="post" action="/assets/<%= asset.id %>" class="inline" data-testid="form-assign">
+            <input type="hidden" name="action" value="assign" />
+            <label class="field">Assign to
+              <input type="text" name="holder" required data-testid="assign-holder" />
+            </label>
+            <button type="submit" class="btn primary" data-testid="action-assign">Assign</button>
+          </form>
+        <% } else if (action.action === 'return') { %>
+          <form method="post" action="/assets/<%= asset.id %>" class="action-form" data-testid="form-return">
+            <input type="hidden" name="action" value="return" />
+            <button type="submit" class="btn" data-testid="action-return">Mark returned</button>
+          </form>
+        <% } else { %>
+          <button type="button" class="btn <%= action.action === 'discarded' ? 'warn' : '' %>" data-open-dialog="reason-<%= action.action %>"><%= action.submitLabel %></button>
+          <dialog id="reason-<%= action.action %>" aria-labelledby="reason-heading-<%= action.action %>" aria-describedby="reason-consequence-<%= action.action %>" data-testid="reason-dialog-<%= action.action %>" <%= reasonError && reasonError.action === action.action ? 'data-reopen' : '' %>>
+            <div class="dialog-head">
+              <h2 id="reason-heading-<%= action.action %>"><%= action.heading %></h2>
+              <button type="button" class="btn" aria-label="Close" data-close-dialog data-testid="reason-close-<%= action.action %>">X</button>
+            </div>
+            <p id="reason-consequence-<%= action.action %>" data-testid="reason-consequence-<%= action.action %>"><%= action.consequence %></p>
+            <form method="post" action="/assets/<%= asset.id %>" class="form dialog-form" data-testid="form-<%= action.action %>">
+              <input type="hidden" name="action" value="<%= action.action %>" />
+              <label for="reason-select-<%= action.action %>"><%= action.reasonLabel %></label>
+              <select id="reason-select-<%= action.action %>" name="reason" required aria-required="true" data-testid="reason-<%= action.action %>" <%= reasonError && reasonError.action === action.action ? 'autofocus' : '' %>>
+                <option value="">Select a reason...</option>
+                <% action.reasons.forEach(function (reason) { %>
+                  <option value="<%= reason %>"><%= reason %></option>
+                <% }); %>
+              </select>
+              <% if (reasonError && reasonError.action === action.action) { %>
+                <p class="error" role="alert" data-testid="reason-error"><%= reasonError.message %></p>
+              <% } %>
+              <div class="form-actions">
+                <button type="button" class="btn" data-close-dialog data-testid="reason-cancel-<%= action.action %>">Cancel</button>
+                <button type="submit" class="btn <%= action.action === 'discarded' ? 'warn' : 'primary' %>" formnovalidate data-testid="<%= action.testId %>"><%= action.submitLabel %></button>
+              </div>
+            </form>
+          </dialog>
+        <% } %>
+      <% }); %>
+      <a class="btn" href="/assets/<%= asset.id %>/edit" data-testid="action-edit">Edit asset</a>
+    </div>
+  </aside>
+</div>
 
 <section class="audit" data-testid="audit-section">
-  <h2>Recent activity</h2>
-  <% if (audit) { %>
-    <p data-testid="audit-entry"><strong><%= audit.created_at %></strong> — <%= audit.action %>: <%= audit.description %></p>
+  <h2>History</h2>
+  <% if (audit && audit.length) { %>
+    <ol>
+      <% audit.forEach(function (entry) { %>
+        <li data-testid="audit-entry">
+          <div class="audit-meta">
+            <span class="audit-time" data-testid="audit-time"><%= entry.created_at %></span>
+            <span class="audit-action" data-testid="audit-action"><%= entry.action %></span>
+            <span data-testid="audit-actor" class="<%= isSystemActor(entry.actor) ? 'actor-system' : 'actor-person' %>"><%= entry.actor %></span>
+          </div>
+          <p class="audit-description" data-testid="audit-description"><%= entry.description %></p>
+        </li>
+      <% }); %>
+    </ol>
   <% } else { %>
     <p data-testid="audit-empty">No activity recorded yet.</p>
   <% } %>
 </section>
 
-<section class="actions" data-testid="actions">
-  <% if (asset.status === 'in-stock') { %>
-    <form method="post" action="/assets/<%= asset.id %>/assign" class="inline">
-      <label>Assign to <input type="text" name="assigned_to" required data-testid="assign-input" /></label>
-      <button type="submit" class="btn primary" data-testid="action-assign">Assign</button>
-    </form>
-  <% } else if (asset.status === 'assigned') { %>
-    <form method="post" action="/assets/<%= asset.id %>/return" class="inline" data-testid="form-return">
-      <button type="submit" class="btn" data-testid="action-return">Mark returned</button>
-    </form>
-    <form method="post" action="/assets/<%= asset.id %>/lost" class="inline" data-testid="form-lost">
-      <button type="submit" class="btn warn" data-testid="action-lost">Mark lost</button>
-    </form>
-  <% } else if (asset.status === 'returned') { %>
-    <%# A returned asset must not offer the "Mark returned" form: returned -> returned is not a valid transition (FR4.4). Only mark-lost and re-assign are offered. %>
-    <form method="post" action="/assets/<%= asset.id %>/lost" class="inline" data-testid="form-lost">
-      <button type="submit" class="btn warn" data-testid="action-lost">Mark lost</button>
-    </form>
-    <form method="post" action="/assets/<%= asset.id %>/assign" class="inline">
-      <label>Re-assign to <input type="text" name="assigned_to" required data-testid="reassign-input" /></label>
-      <button type="submit" class="btn primary" data-testid="action-reassign">Assign</button>
-    </form>
-  <% } else if (asset.status === 'lost') { %>
-    <p class="muted">This asset is marked lost and cannot be transitioned.</p>
-  <% } %>
+<section class="panel notes" data-testid="asset-notes">
+  <h2>Notes</h2>
+  <p><%= showValue(asset.notes) %></p>
 </section>
 
-<p><a href="/assets" data-testid="back-to-list">Back to list</a></p>
 <%- include('_footer') %>

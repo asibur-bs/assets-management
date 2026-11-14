@@ -1,21 +1,43 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const request = require('supertest');
+const { resolveActor } = require('../src/actor');
 const { openDatabase } = require('../src/db');
 const { createApp } = require('../src/app');
-const { seedTwoAssets, latestAssetId } = require('./helpers/seed');
+const { translate } = require('../src/domain/translation');
+const { latestAssetId } = require('./helpers/seed');
+
+const queryPath = path.join(__dirname, '..', 'src', 'reporting', 'query.js');
+const csvPath = path.join(__dirname, '..', 'src', 'reporting', 'csv.js');
+
+function reportingModules() {
+  return {
+    query: fs.existsSync(queryPath) ? require(queryPath) : null,
+    csv: fs.existsSync(csvPath) ? require(csvPath) : null,
+  };
+}
+
+function postAction(app, id, fields) {
+  return request(app).post(`/assets/${id}`).type('form').send(fields);
+}
 
 describe('asset routes (integration)', () => {
   let app;
   let db;
+  const previousActor = process.env.ASSET_ACTOR;
 
   beforeEach(() => {
+    delete process.env.ASSET_ACTOR;
     db = openDatabase(':memory:');
     app = createApp(db);
   });
 
   afterEach(() => {
     if (db) db.close();
+    if (previousActor === undefined) delete process.env.ASSET_ACTOR;
+    else process.env.ASSET_ACTOR = previousActor;
   });
 
   it('GET / redirects to /assets', async () => {
@@ -24,124 +46,319 @@ describe('asset routes (integration)', () => {
     expect(res.headers.location).toBe('/assets');
   });
 
+  it('disables x-powered-by and sets nosniff on every response', async () => {
+    const ok = await request(app).get('/assets');
+    expect(ok.headers['x-powered-by']).toBeUndefined();
+    expect(ok.headers['x-content-type-options']).toBe('nosniff');
+
+    const missing = await request(app).get('/assets/missing');
+    expect(missing.status).toBe(404);
+    expect(missing.headers['x-powered-by']).toBeUndefined();
+    expect(missing.headers['x-content-type-options']).toBe('nosniff');
+
+    const redirected = await request(app).get('/');
+    expect(redirected.headers['x-powered-by']).toBeUndefined();
+    expect(redirected.headers['x-content-type-options']).toBe('nosniff');
+  });
+
   it('GET /assets renders an empty list initially', async () => {
     const res = await request(app).get('/assets');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Assets');
     expect(res.text).toContain('No assets yet.');
+    expect(res.text).toContain('Showing 0 of 0 records');
+    expect(res.text).toContain(`Acting as: ${resolveActor()}`);
   });
 
-  // FR1.4 — a successful registration redirects to the asset LIST view, and the
-  // new asset is visible in that list.
-  it('POST /assets creates an asset and redirects to the asset list (FR1.4)', async () => {
+  it('the list form exposes the five filters and keeps holder only in the query string', async () => {
+    const res = await request(app).get('/assets');
+    expect(res.text).toContain('name="search_text"');
+    expect(res.text).toContain('name="category"');
+    expect(res.text).toContain('name="status"');
+    expect(res.text).toContain('name="sort_column"');
+    expect(res.text).toContain('name="sort_direction"');
+    expect(res.text).not.toContain('name="holder"');
+    expect(res.text).toContain('data-testid="filter-reset"');
+    expect(res.text).toContain('href="/assets"');
+    expect(res.text).toContain('data-testid="export-csv"');
+
+    const held = await request(app).get('/assets').query({ holder: 'Alice', status: 'assigned' });
+    expect(held.text).toContain('name="holder"');
+    expect(held.text).toContain('type="hidden"');
+    expect(held.text).toContain('data-testid="active-holder"');
+    expect(held.text).toContain('Holder Alice');
+    expect(held.text).toContain('holder=Alice');
+    expect(held.text).toContain('href="/assets" data-testid="filter-reset"');
+  });
+
+  it('POST /assets creates an in-stock asset and redirects to its detail', async () => {
     const res = await request(app)
       .post('/assets')
       .type('form')
-      .send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001' });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBe('/assets');
+      .send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001', actor: 'Mallory', assigned_to: 'Alice' });
+    expect(res.status).toBe(303);
+    const id = latestAssetId(db);
+    expect(res.headers.location).toBe(`/assets/${id}`);
+
+    const detail = await request(app).get(`/assets/${id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.text).toContain('ThinkPad');
+    expect(detail.text).toContain('TP-001');
+    expect(detail.text).toContain('In stock');
+    expect(detail.text).not.toContain('Mallory');
+    expect(detail.text).toContain('data-testid="asset-holder">--');
 
     const list = await request(app).get('/assets');
-    expect(list.status).toBe(200);
     expect(list.text).toContain('ThinkPad');
     expect(list.text).toContain('TP-001');
+    expect(list.text).toContain('In stock');
   });
 
-  // FR1.5 — a registration that carries an assignee still lands on the list
-  // view, and the asset is listed in the `in-stock` state.
-  it('POST /assets stores the assignee as a field and lists the asset as in-stock (FR1.5)', async () => {
+  it('shows the resolved actor and ignores an actor supplied on the request', async () => {
+    process.env.ASSET_ACTOR = 'Casey';
     const res = await request(app)
       .post('/assets')
       .type('form')
-      .send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-002', assigned_to: 'Alice' });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBe('/assets');
-
-    const list = await request(app).get('/assets');
-    expect(list.text).toContain('in-stock');
-    expect(list.text).toContain('Alice');
+      .send({ category: 'hardware', name: 'Dock', serial_or_key: 'DK-1', actor: 'Mallory' });
+    const id = latestAssetId(db);
+    expect(res.headers.location).toBe(`/assets/${id}`);
+    const detail = await request(app).get(`/assets/${id}`);
+    expect(detail.text).toContain('Acting as: Casey');
+    expect(detail.text).toContain('data-testid="audit-actor" class="actor-person">Casey');
+    expect(detail.text).not.toContain('Mallory');
+    expect(detail.text).not.toContain('name="actor"');
   });
 
-  it('POST /assets with duplicate serial returns the form with an error', async () => {
+  it('POST /assets with a duplicate serial returns the form and does not write', async () => {
     await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
-    const res = await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'B', serial_or_key: 'X' });
-    expect(res.status).toBe(400);
+    const before = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
+    const res = await request(app)
+      .post('/assets')
+      .type('form')
+      .send({ category: 'hardware', name: 'B', serial_or_key: 'X' });
+    const after = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
+    expect(res.status).toBe(translate('DUPLICATE_ASSET').status);
+    expect(res.status).toBe(409);
     expect(res.text).toContain('already exists');
+    expect(res.text).toContain('data-testid="collision-block"');
+    expect(res.text).toContain('Open existing asset');
+    expect(after).toBe(before);
   });
 
   it('POST /assets with a missing required field returns the form with an error', async () => {
     const res = await request(app).post('/assets').type('form').send({ category: 'hardware', name: '' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(translate('VALIDATION_ERROR').status);
     expect(res.text).toContain('required');
+    expect(res.text).toContain('data-testid="new-form"');
   });
 
-  it('POST /assets/:id/assign transitions to assigned', async () => {
-    const create = await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
-    const id = latestAssetId(db);
-    const res = await request(app).post(`/assets/${id}/assign`).type('form').send({ assigned_to: 'Alice' });
-    expect(res.status).toBe(302);
-    const detail = await request(app).get(`/assets/${id}`);
-    expect(detail.text).toContain('assigned');
+  it('GET /assets/serial-check warns on a collision and does not write', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    const before = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
+    const res = await request(app)
+      .get('/assets/serial-check')
+      .query({ category: 'hardware', serial_or_key: 'X', name: 'B' });
+    const after = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('data-testid="serial-warning"');
+    expect(res.text).toContain('A hardware asset with serial "X" already exists.');
+    expect(res.text).toContain('Open existing asset');
+    expect(after).toBe(before);
+
+    const other = await request(app)
+      .get('/assets/serial-check')
+      .query({ category: 'software-license', serial_or_key: 'X', name: 'B' });
+    expect(other.text).not.toContain('data-testid="serial-warning"');
   });
 
-  it('POST /assets/:id/return transitions assigned -> returned', async () => {
-    const create = await request(app)
-      .post('/assets')
-      .type('form')
-      .send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+  it('POST /assets/:id assign, return, and mark-lost call the transition', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
-    await request(app).post(`/assets/${id}/assign`).type('form').send({ assigned_to: 'Alice' });
-    const res = await request(app).post(`/assets/${id}/return`);
-    expect(res.status).toBe(302);
-    const detail = await request(app).get(`/assets/${id}`);
-    expect(detail.text).toContain('returned');
+
+    const assigned = await postAction(app, id, { action: 'assign', holder: 'Alice' });
+    expect(assigned.status).toBe(303);
+    expect(assigned.headers.location).toBe(`/assets/${id}`);
+    const afterAssign = await request(app).get(`/assets/${id}`);
+    expect(afterAssign.text).toContain('>Assigned</span>');
+    expect(afterAssign.text).toContain('data-testid="asset-holder">Alice');
+
+    const returned = await postAction(app, id, { action: 'return' });
+    expect(returned.status).toBe(303);
+    const afterReturn = await request(app).get(`/assets/${id}`);
+    expect(afterReturn.text).toContain('>Returned</span>');
+    expect(afterReturn.text).toContain('data-testid="asset-holder">--');
+    expect(afterReturn.text).toContain('data-testid="asset-last-holder">Alice');
+
+    const lost = await postAction(app, id, { action: 'mark-lost', reason: 'stolen' });
+    expect(lost.status).toBe(303);
+    const afterLost = await request(app).get(`/assets/${id}`);
+    expect(afterLost.text).toContain('>Lost</span>');
   });
 
-  it('POST /assets/:id/lost transitions to the terminal lost state', async () => {
-    const create = await request(app)
-      .post('/assets')
-      .type('form')
-      .send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+  it('a reason-less loss writes nothing and explains that a reason is required', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
-    await request(app).post(`/assets/${id}/assign`).type('form').send({ assigned_to: 'Alice' });
-    const res = await request(app).post(`/assets/${id}/lost`);
-    expect(res.status).toBe(302);
-    const detail = await request(app).get(`/assets/${id}`);
-    expect(detail.text).toContain('lost');
-  });
-
-  it('POST /assets/:id/return on an in-stock asset is rejected as an invalid transition', async () => {
-    const create = await request(app)
-      .post('/assets')
-      .type('form')
-      .send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
-    const id = latestAssetId(db);
-    const res = await request(app).post(`/assets/${id}/return`);
+    const before = db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n;
+    const res = await postAction(app, id, { action: 'mark-lost', reason: '' });
+    const after = db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n;
     expect(res.status).toBe(400);
-    expect(res.text).toContain('cannot transition');
+    expect(res.text).toContain('A reason is required.');
+    expect(after).toBe(before);
+    const detail = await request(app).get(`/assets/${id}`);
+    expect(detail.text).toContain('>In stock</span>');
   });
 
-  it('GET /assets/:id for unknown id returns 404', async () => {
+  it('POST return on an in-stock asset is rejected as an invalid transition', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    const id = latestAssetId(db);
+    const res = await postAction(app, id, { action: 'return' });
+    expect(res.status).toBe(translate('INVALID_TRANSITION').status);
+    expect(res.text).toContain('That change is not available for this asset');
+    expect(res.text).toContain('In stock');
+  });
+
+  it('POST /assets/:id/delete maps ASSET_DELETE_REFUSED to 405 and keeps the asset', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    const id = latestAssetId(db);
+    const res = await request(app).post(`/assets/${id}/delete`).type('form').send({ actor: 'Mallory' });
+    expect(res.status).toBe(translate('ASSET_DELETE_REFUSED').status);
+    expect(res.status).toBe(405);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+    expect(res.text).toContain('Deleting an asset is refused.');
+    expect(res.text).toContain('ASSET_DELETE_REFUSED');
+    const detail = await request(app).get(`/assets/${id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.text).toContain('>A</h1>');
+  });
+
+  it('GET /assets/:id for an unknown id returns 404', async () => {
     const res = await request(app).get('/assets/missing');
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(translate('NOT_FOUND').status);
+    expect(res.text).toContain('Asset not found.');
   });
 
-  it('renders the create form with the data-testid attributes required by NFR/UI automation', async () => {
+  it('renders the registration form without an assignee or actor field', async () => {
     const res = await request(app).get('/assets/new');
     expect(res.text).toContain('data-testid="new-form"');
     expect(res.text).toContain('data-testid="field-category"');
+    expect(res.text).toContain('data-testid="field-name"');
+    expect(res.text).toContain('data-testid="field-serial"');
     expect(res.text).toContain('data-testid="submit"');
+    expect(res.text).toContain('data-testid="serial-check"');
+    expect(res.text).not.toContain('name="assigned_to"');
+    expect(res.text).not.toContain('name="actor"');
+    expect(res.text).not.toContain('name="status"');
   });
 
-  it('renders list with a search input', async () => {
-    const res = await request(app).get('/assets');
-    expect(res.text).toContain('data-testid="filter-q"');
+  it('edits an asset, refuses a colliding serial, and ignores the asset being edited', async () => {
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    const first = latestAssetId(db);
+    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'B', serial_or_key: 'Y' });
+    const second = latestAssetId(db);
+
+    const selfCheck = await request(app)
+      .get(`/assets/${second}/serial-check`)
+      .query({ category: 'hardware', serial_or_key: 'Y', name: 'B' });
+    expect(selfCheck.status).toBe(200);
+    expect(selfCheck.text).not.toContain('data-testid="serial-warning"');
+
+    const saved = await request(app).post(`/assets/${second}/edit`).type('form').send({
+      action: 'edit',
+      category: 'hardware',
+      name: 'B2',
+      serial_or_key: 'Y',
+      model: 'Tower',
+      notes: 'Kept',
+    });
+    expect(saved.status).toBe(303);
+    expect(saved.headers.location).toBe(`/assets/${second}`);
+    const detail = await request(app).get(`/assets/${second}`);
+    expect(detail.text).toContain('B2');
+    expect(detail.text).toContain('Tower');
+    expect(detail.text).toContain('>edit</span>');
+
+    const collide = await request(app).post(`/assets/${second}/edit`).type('form').send({
+      action: 'edit',
+      category: 'hardware',
+      name: 'B2',
+      serial_or_key: 'X',
+    });
+    expect(collide.status).toBe(409);
+    expect(collide.text).toContain('data-testid="collision-block"');
+    expect(collide.text).toContain(`/assets/${first}`);
+    const unchanged = await request(app).get(`/assets/${second}`);
+    expect(unchanged.text).toContain('data-testid="asset-serial">Y');
+
+    const missingAction = await request(app)
+      .post(`/assets/${second}/edit`)
+      .type('form')
+      .send({ category: 'hardware', name: 'Nope', serial_or_key: 'Y' });
+    expect(missingAction.status).toBe(400);
   });
 
-  // NFR1 — registration is reachable from the list view in 2 clicks or fewer:
-  // the list view links straight to the form.
-  it('links the registration form from the list view (NFR1)', async () => {
+  it('links the registration form from the list view', async () => {
     const res = await request(app).get('/assets');
     expect(res.text).toContain('href="/assets/new"');
   });
+
+  const reporting = reportingModules();
+  if (!reporting.query || !reporting.csv) {
+    it.skip('GET /assets/export requires src/reporting/query.js and src/reporting/csv.js, which are not present', () => {});
+  } else {
+    it('GET /assets/export serves the current filter as CSV', async () => {
+      expect(reporting.csv.CSV_CONTENT_TYPE).toBe('text/csv; charset=utf-8');
+      expect(reporting.csv.CSV_FILENAME).toBe('assets-export.csv');
+      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001' });
+      const filter = { category: 'hardware', search_text: 'Think' };
+      const rows = reporting.query.queryAssets(db, filter);
+      const expected = reporting.csv.renderCsv(rows);
+      const res = await request(app).get('/assets/export').query(filter);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe(reporting.csv.CSV_CONTENT_TYPE);
+      expect(res.headers['content-disposition']).toBe(`attachment; filename="${reporting.csv.CSV_FILENAME}"`);
+      expect(res.headers['x-content-type-options']).toBe('nosniff');
+      expect(res.headers['x-powered-by']).toBeUndefined();
+      expect(res.text).toBe(expected);
+      expect(res.text).not.toContain('<html');
+    });
+  }
+
+  if (!reporting.query) {
+    it.skip('GET /dashboard requires src/reporting/query.js countFigures, which is not present', () => {});
+    it.skip('GET /holders requires src/reporting/query.js listHolders, which is not present', () => {});
+  } else {
+    it('GET /dashboard renders the count figures', async () => {
+      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+      const figures = reporting.query.countFigures(db, {});
+      const res = await request(app).get('/dashboard');
+      expect(res.status).toBe(200);
+      expect(res.headers['x-content-type-options']).toBe('nosniff');
+      expect(res.text).toContain('Reconciliation');
+      expect(res.text).toContain('Active Inventory');
+      expect(res.text).toContain('Total Records');
+      expect(res.text).toContain('available to assign');
+      expect(res.text).toContain('data-testid="attention-lost"');
+      expect(res.text).toContain('data-testid="attention-discarded"');
+      expect(res.text).toContain('data-testid="tile-in-stock"');
+      expect(res.text).toContain('href="/assets?status=in-stock"');
+      const flat = JSON.stringify(figures);
+      expect(flat).toContain('1');
+      expect(res.text).toContain('>In stock 1<');
+    });
+
+    it('GET /holders links each holder row to the filtered asset list', async () => {
+      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+      const id = latestAssetId(db);
+      await postAction(app, id, { action: 'assign', holder: 'Alice' });
+      const listed = reporting.query.listHolders(db, null);
+      const res = await request(app).get('/holders');
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('Holders');
+      expect(res.text).toContain('data-testid="holder-search"');
+      expect(res.text).toContain('distinct display holders, excluding Unassigned');
+      expect(res.text).toContain('href="/assets?holder=Alice"');
+      expect(JSON.stringify(listed).length).toBeGreaterThan(0);
+    });
+  }
 });

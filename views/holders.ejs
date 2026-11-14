@@ -1,0 +1,37 @@
+<% pageTitle = 'Holders'; headerKind = 'holders'; %>
+<%- include('_header') %>
+<form method="get" action="/holders" class="filters" data-testid="holder-search-form">
+  <label class="field">Search holders
+    <input type="search" name="holder_search" value="<%= search %>" data-testid="holder-search" />
+  </label>
+  <button type="submit" class="btn" data-testid="holder-search-apply">Search</button>
+</form>
+<div class="holder-meta">
+  <p class="count-line" data-testid="holder-count">Showing <%= holderCount %> holders</p>
+  <p class="muted" data-testid="holder-count-qualifier">distinct display holders, excluding Unassigned</p>
+</div>
+<% if (!rows.length) { %>
+  <p class="empty-note muted" data-testid="holder-empty">No holders match.</p>
+<% } else { %>
+  <div class="holder-list">
+  <% rows.forEach(function (row) { %>
+    <section class="holder-row" data-testid="holder-row">
+      <div class="holder-identity">
+        <a class="holder-name" href="<%= row.href %>" data-testid="holder-link"><%= row.name %></a>
+        <% if (row.neverHeld && row.name !== 'Unassigned') { %>
+          <p class="holder-marker muted" data-testid="holder-marker">Unassigned</p>
+        <% } %>
+      </div>
+      <p class="holder-total" data-testid="holder-total"><%= row.total %></p>
+      <% if (row.chips.length) { %>
+        <div class="holder-chips">
+          <% row.chips.forEach(function (chip) { %>
+            <span class="status status-<%= chip.status %>" data-testid="holder-chip-<%= chip.status %>"><%= chip.label %> <%= chip.count %></span>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
+  <% }); %>
+  </div>
+<% } %>
+<%- include('_footer') %>
