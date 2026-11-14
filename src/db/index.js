@@ -14,6 +14,7 @@ function openDatabase(filename) {
   const db = new Database(filename || ':memory:');
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  db.pragma('busy_timeout = 5000');
   applyMigrations(db);
   return db;
 }
