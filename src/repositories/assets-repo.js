@@ -1,21 +1,59 @@
 'use strict';
 
 const { randomUUID } = require('node:crypto');
+const {
+  CATEGORY_VALUES,
+  STATUS_VALUES,
+  SERIAL_OR_KEY_INDEX_EXPRESSION,
+  normalizeSerialOrKey,
+} = require('../domain/vocabulary');
 
-const ALLOWED_CATEGORIES = new Set(['hardware', 'software-license']);
-const ALLOWED_STATUSES = new Set(['in-stock', 'assigned', 'returned', 'lost']);
+const ALLOWED_CATEGORIES = new Set(CATEGORY_VALUES);
+const ALLOWED_STATUSES = new Set(STATUS_VALUES);
+
+function makeError(message, code) {
+  const err = new Error(message);
+  err.code = code;
+  return err;
+}
+
+/**
+ * Map a driver failure by err.code alone. Message text is not a signal:
+ * SQLITE_CONSTRAINT_UNIQUE and SQLITE_BUSY are the only codes translated here.
+ */
+function mapSqliteError(err) {
+  const code = err && err.code;
+  if (code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    return makeError('An asset with this category and serial-or-key already exists.', 'DUPLICATE_ASSET');
+  }
+  if (code === 'SQLITE_BUSY') {
+    return makeError('The database is busy; retry the write.', 'BUSY_RETRYABLE');
+  }
+  return err;
+}
+
+function bind(value) {
+  return value === undefined ? null : value;
+}
 
 function nowIso(db) {
   const row = db.prepare("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now') AS ts").get();
   return row.ts;
 }
 
+function optionalAssignee(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function listAssets(db, { q = null, category = null, status = null, sort = 'name', dir = 'asc' } = {}) {
   const where = [];
   const args = [];
-  if (q) {
+  if (typeof q === 'string' && q.length > 0) {
     where.push('(LOWER(name) LIKE ? OR LOWER(serial_or_key) LIKE ?)');
-    args.push(`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`);
+    const needle = `%${q.toLowerCase()}%`;
+    args.push(needle, needle);
   }
   if (category && ALLOWED_CATEGORIES.has(category)) {
     where.push('category = ?');
@@ -35,44 +73,90 @@ function getAsset(db, id) {
   return db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
 }
 
+/**
+ * Application uniqueness check. The candidate is folded with
+ * normalizeSerialOrKey; stored rows are compared with the same expression the
+ * unique index uses. excludeId drops the row being edited. A null serial
+ * (non-string) does not collide. This read does not take a write lock.
+ */
+function findSerialCollision(db, { category, serialOrKey, excludeId } = {}) {
+  const normalized = normalizeSerialOrKey(serialOrKey);
+  if (normalized === null) return null;
+  if (excludeId == null) {
+    return (
+      db
+        .prepare(
+          `SELECT * FROM assets
+            WHERE category = ?
+              AND ${SERIAL_OR_KEY_INDEX_EXPRESSION} = ?`
+        )
+        .get(category, normalized) || null
+    );
+  }
+  return (
+    db
+      .prepare(
+        `SELECT * FROM assets
+          WHERE category = ?
+            AND ${SERIAL_OR_KEY_INDEX_EXPRESSION} = ?
+            AND id != ?`
+      )
+      .get(category, normalized, excludeId) || null
+  );
+}
+
+function assertSerialAvailable(db, spec) {
+  if (findSerialCollision(db, spec)) {
+    throw makeError('An asset with this category and serial-or-key already exists.', 'DUPLICATE_ASSET');
+  }
+}
+
+function previewSerialCollision(db, { category, serialOrKey, excludeId } = {}) {
+  const existingAsset = findSerialCollision(db, { category, serialOrKey, excludeId });
+  return {
+    collision: existingAsset != null,
+    existingAsset,
+  };
+}
+
 function createAsset(db, input) {
   const errors = validateCreate(input);
   if (errors.length) {
-    const err = new Error(errors.join('; '));
-    err.code = 'VALIDATION_ERROR';
+    const err = makeError(errors.join('; '), 'VALIDATION_ERROR');
     err.details = errors;
     throw err;
   }
+  assertSerialAvailable(db, {
+    category: input.category,
+    serialOrKey: input.serialOrKey,
+    excludeId: null,
+  });
   const id = randomUUID();
   const now = nowIso(db);
-  // FR1.5: a newly registered asset is ALWAYS persisted in the `in-stock`
-  // state. An optional `assigned-to` is stored as a plain field on the record
-  // and does not move the asset into the `assigned` state — the asset only
-  // enters `assigned` through the assign action (FR4.2).
-  const status = 'in-stock';
+  // Registration is always in-stock. assignedTo is a stored field only.
   try {
-    db.prepare(`
-      INSERT INTO assets (id, category, name, serial_or_key, model, notes, status, assigned_to, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    db.prepare(
+      `INSERT INTO assets (
+         id, category, name, serial_or_key, model, notes, status,
+         assigned_to, assigned_at, returned_at, last_assigned_to, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
       id,
       input.category,
       input.name,
       input.serialOrKey,
-      input.model ?? null,
-      input.notes ?? null,
-      status,
-      input.assignedTo ?? null,
+      bind(input.model),
+      bind(input.notes),
+      'in-stock',
+      optionalAssignee(input.assignedTo),
+      null,
+      null,
+      null,
       now,
       now
     );
-  } catch (e) {
-    if (String(e.message).includes('UNIQUE constraint failed')) {
-      const err = new Error('An asset with this category and serial-or-key already exists.');
-      err.code = 'DUPLICATE_ASSET';
-      throw err;
-    }
-    throw e;
+  } catch (err) {
+    throw mapSqliteError(err);
   }
   return getAsset(db, id);
 }
@@ -80,54 +164,90 @@ function createAsset(db, input) {
 function updateAsset(db, id, patch) {
   const current = getAsset(db, id);
   if (!current) {
-    const err = new Error('Asset not found.');
-    err.code = 'NOT_FOUND';
-    throw err;
+    throw makeError('Asset not found.', 'NOT_FOUND');
   }
   const merged = { ...current, ...patch };
-  db.prepare(`
-    UPDATE assets
-       SET name = ?, serial_or_key = ?, model = ?, notes = ?, category = ?, assigned_to = ?,
-           status = ?, assigned_at = ?, returned_at = ?, updated_at = ?
-     WHERE id = ?
-  `).run(
-    merged.name,
-    merged.serial_or_key,
-    merged.model,
-    merged.notes,
-    merged.category,
-    merged.assigned_to,
-    merged.status,
-    merged.assigned_at ?? null,
-    merged.returned_at ?? null,
-    nowIso(db),
-    id
-  );
+  assertSerialAvailable(db, {
+    category: merged.category,
+    serialOrKey: merged.serial_or_key,
+    excludeId: id,
+  });
+  try {
+    db.prepare(
+      `UPDATE assets
+          SET name = ?, serial_or_key = ?, model = ?, notes = ?, category = ?,
+              assigned_to = ?, last_assigned_to = ?, status = ?,
+              assigned_at = ?, returned_at = ?, updated_at = ?
+        WHERE id = ?`
+    ).run(
+      bind(merged.name),
+      bind(merged.serial_or_key),
+      bind(merged.model),
+      bind(merged.notes),
+      bind(merged.category),
+      bind(merged.assigned_to),
+      bind(merged.last_assigned_to),
+      bind(merged.status),
+      bind(merged.assigned_at),
+      bind(merged.returned_at),
+      nowIso(db),
+      id
+    );
+  } catch (err) {
+    throw mapSqliteError(err);
+  }
   return getAsset(db, id);
 }
 
-function recordAudit(db, assetId, action, description) {
-  db.prepare(`
-    INSERT INTO audit_log (asset_id, action, description)
-    VALUES (?, ?, ?)
-  `).run(assetId, action, description);
+function recordAudit(db, assetId, action, description, actor) {
+  if (typeof actor !== 'string' || actor.length === 0) {
+    throw makeError('actor is required.', 'VALIDATION_ERROR');
+  }
+  try {
+    db.prepare(
+      `INSERT INTO audit_log (asset_id, action, description, actor)
+       VALUES (?, ?, ?, ?)`
+    ).run(assetId, action, description, actor);
+  } catch (err) {
+    throw mapSqliteError(err);
+  }
 }
 
 function latestAuditFor(db, assetId) {
-  return db.prepare(`
-    SELECT action, description, created_at
-      FROM audit_log
-     WHERE asset_id = ?
-     ORDER BY id DESC
-     LIMIT 1
-  `).get(assetId);
+  return db
+    .prepare(
+      `SELECT id, action, description, actor, created_at
+         FROM audit_log
+        WHERE asset_id = ?
+        ORDER BY id DESC
+        LIMIT 1`
+    )
+    .get(assetId);
+}
+
+function listAudit(db, assetId) {
+  return db
+    .prepare(
+      `SELECT id, asset_id, action, description, actor, created_at
+         FROM audit_log
+        WHERE asset_id = ?
+        ORDER BY id DESC`
+    )
+    .all(assetId);
 }
 
 function validateCreate(input) {
   const errors = [];
-  if (!input.category || !ALLOWED_CATEGORIES.has(input.category)) errors.push('category must be one of hardware or software-license.');
-  if (!input.name || typeof input.name !== 'string' || input.name.trim().length === 0) errors.push('name is required.');
-  if (!input.serialOrKey || typeof input.serialOrKey !== 'string' || input.serialOrKey.trim().length === 0) errors.push('serial-or-key is required.');
+  const value = input && typeof input === 'object' ? input : {};
+  if (!value.category || !ALLOWED_CATEGORIES.has(value.category)) {
+    errors.push('category must be one of hardware or software-license.');
+  }
+  if (!value.name || typeof value.name !== 'string' || value.name.trim().length === 0) {
+    errors.push('name is required.');
+  }
+  if (!value.serialOrKey || typeof value.serialOrKey !== 'string' || value.serialOrKey.trim().length === 0) {
+    errors.push('serial-or-key is required.');
+  }
   return errors;
 }
 
@@ -138,6 +258,8 @@ module.exports = {
   updateAsset,
   recordAudit,
   latestAuditFor,
+  listAudit,
+  previewSerialCollision,
   nowIso,
   ALLOWED_CATEGORIES,
   ALLOWED_STATUSES,
