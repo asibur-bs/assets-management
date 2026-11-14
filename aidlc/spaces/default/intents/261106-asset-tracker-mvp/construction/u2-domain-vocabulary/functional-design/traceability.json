@@ -1,0 +1,684 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-domain-vocabulary",
+  "upstream_ids": [
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC3.3.1",
+    "AC3.3.2",
+    "AC3.3.3",
+    "AC3.3.4",
+    "AC3.6.1",
+    "AC3.6.2",
+    "AC3.6.3",
+    "AC3.6.4",
+    "AC5.1.1",
+    "AC5.1.10",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.6.1",
+    "AC5.6.2",
+    "AC5.6.3",
+    "FR1.4",
+    "FR1.5",
+    "FR1.7",
+    "FR1.8",
+    "FR2.6",
+    "FR3.1",
+    "FR3.10",
+    "FR3.12",
+    "FR3.2",
+    "FR3.3",
+    "FR3.6",
+    "FR3.6a",
+    "FR3.7",
+    "FR3.8",
+    "FR4.2",
+    "FR5.1",
+    "FR5.2",
+    "FR6.1",
+    "FR6.2",
+    "FR6.3",
+    "FR6.4",
+    "FR6.5",
+    "FR6.6",
+    "FR6.7",
+    "US1.2",
+    "US3.3",
+    "US3.6",
+    "US5.1",
+    "US5.6"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "BR5.1"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "BR5.1"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "BR5.3"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "BR5.2"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "BR3.1"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "BR3.2, BR3.3"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "BR3.4"
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "OK",
+      "target": "BR3.1, BR3.3"
+    },
+    {
+      "id": "AC3.6.1",
+      "status": "OK",
+      "target": "BR4.1"
+    },
+    {
+      "id": "AC3.6.2",
+      "status": "OK",
+      "target": "BR4.1"
+    },
+    {
+      "id": "AC3.6.3",
+      "status": "OK",
+      "target": "BR10.1, BR4.1"
+    },
+    {
+      "id": "AC3.6.4",
+      "status": "OK",
+      "target": "BR4.4"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "BR8.4"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "OK",
+      "target": "BR9.1, BR9.2, BR9.3"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "BR9.2"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "BR9.1"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "BR9.5"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "BR7.4, BR7.3"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "BR9.6, BR7.1"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "BR9.4"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "OK",
+      "target": "BR9.4"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "BR7.2"
+    },
+    {
+      "id": "AC5.6.1",
+      "status": "OK",
+      "target": "BR7.1"
+    },
+    {
+      "id": "AC5.6.2",
+      "status": "OK",
+      "target": "BR7.1"
+    },
+    {
+      "id": "AC5.6.3",
+      "status": "OK",
+      "target": "BR7.3"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "BR5.1"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "BR5.2"
+    },
+    {
+      "id": "FR1.7",
+      "status": "OK",
+      "target": "BR5.5, BR6.3, BR6.4"
+    },
+    {
+      "id": "FR1.8",
+      "status": "OK",
+      "target": "BR5.4"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "BR1.1, BR1.2, BR1.3"
+    },
+    {
+      "id": "FR3.10",
+      "status": "OK",
+      "target": "BR3.2, BR3.3, BR3.4"
+    },
+    {
+      "id": "FR3.12",
+      "status": "OK",
+      "target": "BR4.1, BR4.2, BR4.4"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "BR2.1, BR2.2, BR2.3"
+    },
+    {
+      "id": "FR2.6",
+      "status": "OK",
+      "target": "BR6.6"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "BR6.2"
+    },
+    {
+      "id": "FR3.6",
+      "status": "GAP",
+      "target": "U3 write path records the departing holder; this unit states the reason, not that write"
+    },
+    {
+      "id": "FR3.6a",
+      "status": "OK",
+      "target": "BR3.1, BR3.4"
+    },
+    {
+      "id": "FR3.8",
+      "status": "OK",
+      "target": "BR3.1, BR3.4"
+    },
+    {
+      "id": "FR3.7",
+      "status": "OK",
+      "target": "BR4.3"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "BR11.1, BR11.2"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "BR7.1, BR7.2"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "BR7.3"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "BR8.1, BR8.2, BR8.4, BR9.4"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "BR9.2"
+    },
+    {
+      "id": "FR6.3",
+      "status": "OK",
+      "target": "BR9.1"
+    },
+    {
+      "id": "FR6.4",
+      "status": "OK",
+      "target": "BR9.5"
+    },
+    {
+      "id": "FR6.5",
+      "status": "OK",
+      "target": "BR7.4"
+    },
+    {
+      "id": "FR6.6",
+      "status": "OK",
+      "target": "BR9.6"
+    },
+    {
+      "id": "FR6.7",
+      "status": "OK",
+      "target": "BR9.3"
+    },
+    {
+      "id": "US1.2",
+      "status": "OK",
+      "target": "BR5.1, BR5.2, BR5.3, BR5.4"
+    },
+    {
+      "id": "US3.3",
+      "status": "OK",
+      "target": "BR3.1, BR3.2, BR3.3, BR3.4"
+    },
+    {
+      "id": "US3.6",
+      "status": "OK",
+      "target": "BR4.1, BR4.2, BR4.3, BR4.4"
+    },
+    {
+      "id": "US5.1",
+      "status": "OK",
+      "target": "BR8.1, BR8.2, BR8.3, BR8.4, BR9.1, BR9.2, BR9.3, BR9.4, BR9.5, BR9.6"
+    },
+    {
+      "id": "US5.6",
+      "status": "OK",
+      "target": "BR7.1, BR7.2, BR7.3"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "US1.2"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "US1.2"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "US1.2"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "US1.2"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "US3.3"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "US3.3"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "US3.3"
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "OK",
+      "target": "US3.3"
+    },
+    {
+      "id": "AC3.6.1",
+      "status": "OK",
+      "target": "US3.6"
+    },
+    {
+      "id": "AC3.6.2",
+      "status": "OK",
+      "target": "US3.6"
+    },
+    {
+      "id": "AC3.6.3",
+      "status": "OK",
+      "target": "US3.6"
+    },
+    {
+      "id": "AC3.6.4",
+      "status": "OK",
+      "target": "US3.6"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "US5.1"
+    },
+    {
+      "id": "AC5.6.1",
+      "status": "OK",
+      "target": "US5.6"
+    },
+    {
+      "id": "AC5.6.2",
+      "status": "OK",
+      "target": "US5.6"
+    },
+    {
+      "id": "AC5.6.3",
+      "status": "OK",
+      "target": "US5.6"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "FR3.1"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "FR3.1"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "FR3.1"
+    },
+    {
+      "id": "BR10.1",
+      "status": "OK",
+      "target": "FR3.1, AC3.6.3"
+    },
+    {
+      "id": "BR10.2",
+      "status": "OK",
+      "target": "FR3.1"
+    },
+    {
+      "id": "BR11.1",
+      "status": "OK",
+      "target": "FR4.2, US1.2"
+    },
+    {
+      "id": "BR11.2",
+      "status": "OK",
+      "target": "FR4.2, US1.2"
+    },
+    {
+      "id": "BR11.3",
+      "status": "OK",
+      "target": "FR4.2, US1.2"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "FR3.2"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "FR3.2"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "FR3.2"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "FR3.6, US3.3, AC3.3.1, AC3.3.4"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "FR3.10, US3.3, AC3.3.2"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "FR3.10, US3.3, AC3.3.2, AC3.3.4"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "FR3.6, FR3.10, AC3.3.3"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "FR3.12, US3.6, AC3.6.1, AC3.6.2"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "FR3.12, US3.6"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "FR3.7, US3.6"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "FR3.12, US3.6, AC3.6.4"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "FR1.4, US1.2, AC1.2.1, AC1.2.2"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "FR1.5, US1.2, AC1.2.4"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "FR1.4, US1.2, AC1.2.3"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "FR1.8, US1.2"
+    },
+    {
+      "id": "BR5.5",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.4",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.5",
+      "status": "OK",
+      "target": "FR1.7"
+    },
+    {
+      "id": "BR6.6",
+      "status": "OK",
+      "target": "FR1.7, US1.2"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "FR5.1, US5.6, AC5.1.6, AC5.6.1, AC5.6.2"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "FR5.1, US5.6, AC5.1.9"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "FR5.2, US5.6, AC5.1.5, AC5.6.3"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "FR6.5, US5.6, AC5.1.5"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "FR6.1, US5.1"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "FR6.1, US5.1"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "FR6.1, US5.1"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "FR6.1, US5.1, AC5.1.1"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "FR6.1, US5.1"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "FR6.3, US5.1, AC5.1.3, AC5.1.10"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "FR6.2, US5.1, AC5.1.2, AC5.1.10"
+    },
+    {
+      "id": "BR9.3",
+      "status": "OK",
+      "target": "FR6.7, US5.1, AC5.1.10"
+    },
+    {
+      "id": "BR9.4",
+      "status": "OK",
+      "target": "FR6.1, US5.1, AC5.1.7, AC5.1.8"
+    },
+    {
+      "id": "BR9.5",
+      "status": "OK",
+      "target": "FR6.4, US5.1, AC5.1.4"
+    },
+    {
+      "id": "BR9.6",
+      "status": "OK",
+      "target": "FR6.3, US5.1, AC5.1.6"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+                                    [New asset] |
+                                                v
+                                        +--------------------------+
+                                        | W4 New asset             |
+                                        | Category                 |
+                                        | Name                     |
+                                        | Serial or key            |
+                                        | Model, Notes             |
+                                        +--------------------------+
+                                            |                   |
+              |------------------------------                   |
+              | inline check                  submit            |
+              |                                                 |
+              v                                                 |
+    +----------------------+      +--------------------------+  |
+    | Duplicate?           |      | warning dismissed        |  |
+    | inline warning       |----->| the form stays as typed; |  |
+    | [Open existing]      |      | the submit still runs    |  |
+    | (dismissable)        |      +--------------------------+  |
+    +----------------------+        |                           |
+            |                       |                           |
+            | dismissed:            |                           |
+            | continue              |                           |
+            |                       |                           |
+            | [Open existing]       |                           |
+            |                       v             v--------------
+            |                     +----------------------+
+            |                     | Uniqueness check     |
+            |                     | on submit            |
+            |                     +----------------------+
+            |                           |           |   no collision
+            |               collision   |           ------------------------|
+            |                           |                                   |
+            |                           v                                   |
+            |                     +----------------------+                  |
+            |                     | Collision block      |                  |
+            |                 |---| names the asset      |--|               |
+            |                 |   | [Open existing]      |  |               |
+            |                 |   | [Change the serial]  |  |               |
+            |                 |   +----------------------+  |               |
+            |                 |                             |               |
+            |                 |                             |               |
+            |                 |                             |               |
+            |                 |                             |               |
+            |                 |                             |               v
+            | [Open existing] |                             |   +----------------------+
+            |                 |                             |   | create succeeds      |
+            |                 |                             |   | asset created        |
+            |                 |                             |   | status: in-stock     |
+            |                 |                             |   | audit: create        |
+            |                 |                             |   +----------------------+
+            |                 |                             |change the serial  |
+            |                 |                             |                   |
+            |                 |                             |                   |
+            |                 |                             |                   |
+            |                 |                             |                   |
+            v                 |                             |                   v
+    +----------------------+  |                             |   +----------------------+
+    | W3 Asset detail      |  |                             |   | W2 Asset list        |
+    | the EXISTING asset   |  |                             |   | redirected           |
+    | no create,           |  |                             |   | counts refreshed     |
+    | no audit entry       |  |                             |   +----------------------+
+    +----------------------+  |                             |
+                              |                             |
+                              |                             |
+                              |                             |
+                              |                             |
+                              |                             |
+                              ------v                       v
+                                  +----------------------+ +----------------------+
+                                  | W3 Asset detail      | | change the serial    |
+                                  | the EXISTING asset   | | back to W4           |
+                                  | no create,           | | (values kept)        |
+                                  | no audit entry       | +----------------------+
+                                  +----------------------+

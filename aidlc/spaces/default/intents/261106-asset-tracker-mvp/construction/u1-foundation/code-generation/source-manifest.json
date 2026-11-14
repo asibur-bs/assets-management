@@ -1,0 +1,15 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-foundation",
+  "version": 1,
+  "writes": [
+    { "path": "src/db/migrate.js" },
+    { "path": "src/db/index.js" },
+    { "path": "src/actor.js" },
+    { "path": "vitest.config.js" },
+    { "path": "tests/foundation/rebuild.test.js" },
+    { "path": "tests/foundation/connection.test.js" },
+    { "path": "tests/foundation/actor.test.js" },
+    { "path": "tests/tooling/gates.test.js" }
+  ]
+}

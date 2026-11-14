@@ -1,0 +1,41 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-foundation",
+  "reverse": [],
+  "upstream_ids": [
+    "AC0.1.1",
+    "AC0.1.2",
+    "AC0.1.3",
+    "AC0.1.4",
+    "AC0.1.5",
+    "AC0.1.6",
+    "AC0.1.7",
+    "AC0.1.8",
+    "AC0.1.9",
+    "AC0.1.10",
+    "AC0.1.11",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5"
+  ],
+  "coverage": [
+    { "id": "AC0.1.1", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.2", "status": "OK", "target": "src/db/migrate.js" },
+    { "id": "AC0.1.3", "status": "OK", "target": "src/db/migrate.js" },
+    { "id": "AC0.1.4", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.5", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.6", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.7", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.8", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.9", "status": "OK", "target": "src/db/migrate.js" },
+    { "id": "AC0.1.10", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC0.1.11", "status": "OK", "target": "src/actor.js" },
+    { "id": "AC4.2.1", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC4.2.2", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC4.2.3", "status": "OK", "target": "tests/foundation/rebuild.test.js" },
+    { "id": "AC4.2.4", "status": "Deferred", "target": "src/db/migrate.js" },
+    { "id": "AC4.2.5", "status": "Deferred", "target": "src/repositories/assets-repo.js" }
+  ]
+}

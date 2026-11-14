@@ -1,0 +1,87 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-domain-vocabulary",
+  "unit_kind": "library",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR3.2",
+    "NFR6.1",
+    "NFR6.3",
+    "NFR6.6"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "Unit-test gate asserts closed codes, { code, status, retryable } with no message field, dual-cut INTERNAL — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "Unit-test gate covers normalisation/fold agreement including non-ASCII boundary — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "No infrastructure for this leaf: escaping/rendering is presentation-owned; CI for this unit is pure module tests only."
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "Install uses monolith lockfile; unit adds no production dependency; no registry publish — cicd-pipeline.md## Pipeline Ownership / ## Distribution Model"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "Unit tests cover BACKFILL_ACTOR / isBackfillActor; no secrets in CI for this unit — cicd-pipeline.md## Required Stages and Gates / ## Distribution Model"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "N/A",
+      "target": "No header middleware infrastructure for this library; presentation owns nosniff / X-Powered-By. CI does not deploy or serve HTTP for this unit."
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "Unit tests cover closed seven-value audit-action set — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "mapDriverCode table tests on literal SQLITE_BUSY in unit-test stage; live busy job remains write-path — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "Unit-test stage runs additive Vitest suite; baseline not replaced — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "Test stage contract requires requirement ids in titles/comments — cicd-pipeline.md## Required Stages and Gates"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "Test stage contract: assert on codes never message prose — cicd-pipeline.md## Required Stages and Gates"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "release-ci-stages",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/infrastructure-design/cicd-pipeline.md"
+    },
+    {
+      "id": "merge-revert-rollback",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/infrastructure-design/cicd-pipeline.md"
+    }
+  ]
+}

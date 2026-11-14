@@ -1,0 +1,28 @@
+## Review
+
+**Verdict:** NOT-READY
+**Reviewer:** aidlc-architecture-reviewer-agent
+**Date:** 2026-11-13T08:24:38Z
+**Iteration:** 1
+
+### Findings
+
+| ID | Severity | Location | Finding | Required action | Status |
+|---|---|---|---|---|---|
+| R-01 | Critical | src/domain/vocabulary.js > TRANSITION_EDGES assigned→discarded reasonSet and acceptableReasonsFor | The discard edge publishes `reasonSet: 'retirement-union'`, and `acceptableReasonsFor` / `isAcceptableReason` only accept the operations `loss`, `recovery`, and `retirement` (`entities.md` `ReasonVocabulary.acceptable_for`). A live call `isAcceptableReason('retirement-union', reason)` returns false for `damaged`, `stolen`, `superseded`, `written-off`, and `returned-to-supplier`, while the same reasons against `retirement` return true. `functional-spec.md` State Machine 1 edge 5 requires that discard to accept the loss set and the retirement set. The recovery edge's token `loss` happens to accept the right values only because loss and recovery share one set; it is not the operation `recovery`. `tests/domain/vocabulary.test.js` locks `reasonSet: 'retirement-union'` and never passes that token into `isAcceptableReason`, so the green unit gate does not catch the break. A write path that resolves the edge and then checks the edge's own token will refuse every discard. | Use one token vocabulary the checker accepts. Resolve the assigned→discarded edge to the retirement operation so both a loss reason and a retirement reason pass, and add a test that calls `isAcceptableReason` with `findTransition('assigned', 'discarded').reasonSet`. Map the recovery edge's token the same way so acceptance does not depend on loss and recovery sharing a set. | New |
+| R-02 | Major | src/domain/vocabulary.js > sanitizeAssetFilter and the filter exports; aidlc/spaces/default/intents/261106-asset-tracker-mvp/inception/contract-design/contract-summary.md > Contract 3 filter_dimensions | Contract 3 requires `search_text` to apply to `name` and `serial_or_key`, and the `holder` dimension to be a free-text match over the derived display holder. The module exports dimension names and `sanitizeAssetFilter`, which copies `search_text` and `holder` through as strings. No export carries `applies_to`. `holderRowMatchesSearch` compares a name the caller already chose and does not call `deriveDisplayHolder`, so a reporting query can match the raw current-holder column. `rules.md` BR8.1 names that mismatch as the defect that makes the directory and the asset list disagree. `unit-of-work.md` U2 says a contract this library cannot enforce is only a comment, and the counting agreement depends on this one definition. | Export the filter dimension records, including `search_text` `applies_to` of name and serial-or-key, and one predicate that matches the holder dimension against `deriveDisplayHolder` rather than the raw holder column. Use that same containment for holder-row search. | New |
+| R-03 | Major | src/domain/vocabulary.js > normalizeSerialOrKey; aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/code-generation/traceability.json > coverage BR5.2 | BR5.1 and FR1.5 require one normalisation both tiers implement: trim, then an ASCII-only fold. `normalizeSerialOrKey` returns `''` for every non-string. Live calls: `serialOrKeyCollides(null, 'hardware', [{ id: 1, category: 'hardware', serialOrKey: null }])` is true, and the same candidate `''` or `'  '` against a null stored value is also true. A live SQLite unique index on `(category, LOWER(TRIM(serial)))` inserts two NULL serials in category `hardware` successfully, and `LOWER(TRIM(NULL))` is NULL. The tiers disagree on NULL versus blank. No index expression is exported for U1 to consume. `traceability.json` marks BR5.2 OK against `tests/domain/vocabulary.test.js`, and that test never runs a second tier or a non-string. The traceability sensor still passes because the target file exists. | Make the shared operation the string operation the rule states, so a non-string is not folded to `''` and does not collide with a blank serial. Export the single expression the functional index must use, and stop recording BR5.2 as implemented by a test that never compares the two tiers. | New |
+
+### Validation Tool Results
+
+| Tool | Result | Interpretation |
+|---|---|---|
+| required-sections | PASS on code-generation-plan.md, code-summary.md, and unit-test-instructions.md | Each planning and summary file has at least two H2 headings. This does not address R-01, R-02, or R-03. |
+| traceability | PASS | Upstream ids are listed and every OK target is an existing file. The sensor checks that the file exists, not that the file implements the id, so the pass does not clear R-01 or R-03. |
+| linter | PASS, note tool-unavailable, on vocabulary.js, translation.js, index.js, vocabulary.test.js, and translation.test.js | No ESLint configuration was available, so the sensor produced no rule results. |
+| type-check | Not applied | The sensor filter is `**/*.{ts,tsx}` and rejected `src/domain/vocabulary.js`. This unit is JavaScript. |
+| vitest unit gate | PASS, 15 tests, 2 files | `npx vitest run tests/domain/vocabulary.test.js tests/domain/translation.test.js` passed. The transition test expects `reasonSet: 'retirement-union'` and never feeds that token to `isAcceptableReason`, so the green run does not exercise R-01. |
+
+### Summary
+
+The leaf vocabulary cannot be consumed as specified: the discard edge's reason token is rejected by the only reason checker, the serial predicate disagrees with the SQL expression it is supposed to share on NULL, and the filter export omits the match targets Contract 3 requires the reporting unit to use.

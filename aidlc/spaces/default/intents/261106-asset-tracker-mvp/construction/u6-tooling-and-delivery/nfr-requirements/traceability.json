@@ -1,0 +1,95 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u6-tooling-and-delivery",
+  "unit_kind": "packaging",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6"],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "Not applicable to this packaging unit. NFR1 is the Performance group (response time, throughput, resource ceiling). u6-tooling-and-delivery owns formatter/linter config, pre-commit, hosted pipeline, and deploy procedure; it handles no HTTP request and measures no application latency. Performance leaves bind u3-write-path, u4-reporting, and u5-presentation. The stage produces_kinds filter also excludes a performance artifact for packaging."
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.4.1, NFR2.4.2, NFR2.4.3, NFR2.4.4, NFR2.4.5, NFR2.4.6"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.5.1, NFR3.5.2 — packaging binds WAL-aware stop-then-copy backup and smoke-gated deploy success that preserve audit history under NFR3.5. NFR3.1/NFR3.2 bind u3-write-path (and NFR3.2.1 in u2-domain-vocabulary). NFR3.3/NFR3.4/NFR3.5a/NFR3.6 bind u1-foundation migration/backfill ownership; packaging does not author migration SQL."
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "Not applicable to this packaging unit. NFR4 is the Accessibility group (WCAG / FR11.1 screen gates). u6-tooling-and-delivery renders no UI and serves no route; accessibility binds u5-presentation. The stage produces_kinds filter also excludes accessibility-oriented artifacts outside this unit's security/tech-stack pair."
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.1.1 — packaging must not introduce container/IaC or a second topology, preserving C4/NFR5.1 single-host deployment. NFR5.2 binds u4-reporting counting path; NFR5.3 binds u5-presentation asset list. No separate scalability artifact is produced for packaging."
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1.1, NFR6.2.1 — pre-commit and GitHub Actions enforce the POC suite baseline and the 80% line-coverage floor. NFR6.3–NFR6.6 bind application units' test authorship (identifiers, test-first rebuilds, migration fixtures, err.code assertions), not packaging gates."
+    }
+  ],
+  "reverse": [
+    {
+      "id": "NFR2.4.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR2.4.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR2.4.3",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR2.4.4",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR2.4.5",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR2.4.6",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR3.5.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR3.5.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-security-requirements"
+    },
+    {
+      "id": "NFR5.1.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#scalability-aspect-that-binds-packaging"
+    },
+    {
+      "id": "NFR6.1.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-testability-requirements"
+    },
+    {
+      "id": "NFR6.2.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u6-tooling-and-delivery/nfr-requirements/security-requirements.md#the-units-testability-requirements"
+    }
+  ]
+}

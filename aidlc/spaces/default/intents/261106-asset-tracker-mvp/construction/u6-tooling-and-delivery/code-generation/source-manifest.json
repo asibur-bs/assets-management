@@ -1,0 +1,23 @@
+{
+  "stage": "code-generation",
+  "unit": "u6-tooling-and-delivery",
+  "version": 1,
+  "writes": [
+    { "path": "package.json" },
+    { "path": "package-lock.json" },
+    { "path": ".prettierrc.json" },
+    { "path": ".prettierignore" },
+    { "path": "eslint.config.js" },
+    { "path": "vitest.config.js" },
+    { "path": "lefthook.yml" },
+    { "path": ".github/workflows/ci.yml" },
+    { "path": "scripts/secret-scan.sh" },
+    { "path": "scripts/backup-database.sh" },
+    { "path": "scripts/prune-backups.sh" },
+    { "path": "scripts/smoke-deploy.sh" },
+    { "path": "scripts/snapshot-audit-baseline.sh" },
+    { "path": "docs/deploy.md" },
+    { "path": "tests/tooling/config.test.js" },
+    { "path": "tests/tooling/gates.test.js" }
+  ]
+}

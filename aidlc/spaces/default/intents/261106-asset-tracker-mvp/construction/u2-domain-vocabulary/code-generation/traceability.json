@@ -1,0 +1,592 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-domain-vocabulary",
+  "reverse": [],
+  "upstream_ids": [
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC3.3.1",
+    "AC3.3.2",
+    "AC3.3.3",
+    "AC3.3.4",
+    "AC3.6.1",
+    "AC3.6.2",
+    "AC3.6.3",
+    "AC3.6.4",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.6.1",
+    "AC5.6.2",
+    "AC5.6.3",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR5.5",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR6.4",
+    "BR6.5",
+    "BR6.6",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3",
+    "BR8.4",
+    "BR8.5",
+    "BR9.1",
+    "BR9.2",
+    "BR9.3",
+    "BR9.4",
+    "BR9.5",
+    "BR9.6",
+    "BR10.1",
+    "BR10.2",
+    "BR11.1",
+    "BR11.2",
+    "BR11.3",
+    "NFR2.1",
+    "NFR2.1.1",
+    "NFR2.1.2",
+    "NFR2.1.3",
+    "NFR2.1.4",
+    "NFR2.1.5",
+    "NFR2.1.6",
+    "NFR2.1.7",
+    "NFR2.2",
+    "NFR2.2.1",
+    "NFR2.2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.4.1",
+    "NFR2.5",
+    "NFR2.5.1",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.7.1",
+    "NFR3.2",
+    "NFR3.2.1",
+    "NFR6.1",
+    "NFR6.1.1",
+    "NFR6.3",
+    "NFR6.3.1",
+    "NFR6.6",
+    "NFR6.6.1"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "N/A",
+      "target": "Stored and displayed serial keep original casing and spacing on the write path. This leaf's normalizeSerialOrKey is the comparison fold only."
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "N/A",
+      "target": "A missing required reason must refuse the transition with no status change and no audit entry. That refusal is the write path. This leaf publishes reasonRequired and the reason sets only."
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC3.6.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC3.6.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC3.6.3",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC3.6.4",
+      "status": "N/A",
+      "target": "Audit description wording is the write path's description builder (BR4.4). This leaf publishes the seven action names and does not build descriptions."
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "N/A",
+      "target": "Four-surface agreement (dashboard, directory, asset list, CSV) needs the u4/u5 consumers. This unit exports the counting definition only, same boundary as AC5.1.7."
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "N/A",
+      "target": "Shown vs matching counts are list/presentation (u5); BR9.5 not implemented in this leaf"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "N/A",
+      "target": "Per-holder chip aggregation is u4-reporting; display-holder input covered by BR7 / AC5.6"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "N/A",
+      "target": "Consumer surfaces must call shared counting (u4/u5); this unit exports the definition only"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "N/A",
+      "target": "Aggregate query row-count property is u4-reporting; definition predicates only here"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC5.6.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "AC5.6.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "AC5.6.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR5.5",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "src/domain/translation.js"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR6.4",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "BR6.5",
+      "status": "OK",
+      "target": "src/domain/translation.js"
+    },
+    {
+      "id": "BR6.6",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js",
+      "note": "Single definition exported; consumer wiring is U4/U5"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR9.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR9.4",
+      "status": "N/A",
+      "target": "Aggregation ownership is u4-reporting; this unit exports definition predicates only"
+    },
+    {
+      "id": "BR9.5",
+      "status": "N/A",
+      "target": "Shown vs matching counts are list/presentation (u5); not computed here"
+    },
+    {
+      "id": "BR9.6",
+      "status": "N/A",
+      "target": "Per-holder chip aggregation is u4-reporting; definition only here"
+    },
+    {
+      "id": "BR10.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR10.2",
+      "status": "OK",
+      "target": "src/domain/index.js"
+    },
+    {
+      "id": "BR11.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "BR11.2",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "BR11.3",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "N/A",
+      "target": "Refusing a client-supplied actor is the write path (OQ1). This leaf's owned slice is the reserved system literal and the closed error set, covered by NFR2.1.1–NFR2.1.7."
+    },
+    {
+      "id": "NFR2.1.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.1.2",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR2.1.3",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR2.1.4",
+      "status": "OK",
+      "target": "src/domain/translation.js"
+    },
+    {
+      "id": "NFR2.1.5",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "NFR2.1.6",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR2.1.7",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "This leaf holds no SQL. The fold that keeps the two uniqueness tiers from disagreeing is NFR2.2.1 and NFR2.2.2, not the query-layer interpolation ban."
+    },
+    {
+      "id": "NFR2.2.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.2.2",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "Escaping rendered output is presentation-owned. This leaf renders nothing and publishes only fixed literals; the negative rule is NFR2.2.2."
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR2.4.1",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "N/A",
+      "target": "CSRF binds the write path and is conditional on OQ1. This leaf's rule that no client-settable field is the actor source is NFR2.5.1."
+    },
+    {
+      "id": "NFR2.5.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "N/A",
+      "target": "nosniff and X-Powered-By are presentation middleware. Translation returns { code, status, retryable } only and cannot set response headers."
+    },
+    {
+      "id": "NFR2.7",
+      "status": "N/A",
+      "target": "Refusing audit update or delete is the foundation unit's database triggers. This leaf owns the closed seven-action vocabulary as NFR2.7.1."
+    },
+    {
+      "id": "NFR2.7.1",
+      "status": "OK",
+      "target": "src/domain/vocabulary.js"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "src/domain/translation.js"
+    },
+    {
+      "id": "NFR3.2.1",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "NFR6.1.1",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "NFR6.3.1",
+      "status": "OK",
+      "target": "tests/domain/vocabulary.test.js"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    },
+    {
+      "id": "NFR6.6.1",
+      "status": "OK",
+      "target": "tests/domain/translation.test.js"
+    }
+  ]
+}

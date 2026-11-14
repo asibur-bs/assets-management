@@ -1,0 +1,141 @@
+{
+  "stage": "code-generation",
+  "unit": "u6-tooling-and-delivery",
+  "reverse": [],
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.4.1",
+    "NFR2.4.2",
+    "NFR2.4.3",
+    "NFR2.4.4",
+    "NFR2.4.5",
+    "NFR2.4.6",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR3.5",
+    "NFR3.5.1",
+    "NFR3.5.2",
+    "NFR5.1",
+    "NFR5.1.1",
+    "NFR6.1",
+    "NFR6.1.1",
+    "NFR6.2",
+    "NFR6.2.1"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "N/A",
+      "target": "Actor-trust rule is enforced on the write path (u3) and vocabulary (u2); packaging ships no route or actor resolver."
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "SQL binding is owned by data/write-path units; packaging may lint those files but does not author queries."
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "XSS escaping is owned by u5-presentation; views/ are excluded from Prettier, not used as an XSS control."
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "scripts/secret-scan.sh"
+    },
+    {
+      "id": "NFR2.4.1",
+      "status": "OK",
+      "target": "scripts/secret-scan.sh"
+    },
+    {
+      "id": "NFR2.4.2",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml"
+    },
+    {
+      "id": "NFR2.4.3",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml"
+    },
+    {
+      "id": "NFR2.4.4",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml"
+    },
+    {
+      "id": "NFR2.4.5",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml"
+    },
+    {
+      "id": "NFR2.4.6",
+      "status": "OK",
+      "target": "package.json"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "N/A",
+      "target": "Conditional CSRF binds the write path when a browser-attached credential is chosen (OQ1); packaging owns no session or cookie."
+    },
+    {
+      "id": "NFR2.6",
+      "status": "N/A",
+      "target": "Response headers are owned by u5-presentation; packaging introduces no reverse proxy under C4."
+    },
+    {
+      "id": "NFR2.7",
+      "status": "N/A",
+      "target": "Append-only triggers are owned by u1-foundation; packaging preserves history operationally via backup and smoke (NFR3.5.*)."
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "docs/deploy.md"
+    },
+    {
+      "id": "NFR3.5.1",
+      "status": "OK",
+      "target": "scripts/backup-database.sh"
+    },
+    {
+      "id": "NFR3.5.2",
+      "status": "OK",
+      "target": "scripts/smoke-deploy.sh"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "docs/deploy.md"
+    },
+    {
+      "id": "NFR5.1.1",
+      "status": "OK",
+      "target": "docs/deploy.md"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "lefthook.yml"
+    },
+    {
+      "id": "NFR6.1.1",
+      "status": "OK",
+      "target": "lefthook.yml"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "vitest.config.js"
+    },
+    {
+      "id": "NFR6.2.1",
+      "status": "OK",
+      "target": "vitest.config.js"
+    }
+  ]
+}

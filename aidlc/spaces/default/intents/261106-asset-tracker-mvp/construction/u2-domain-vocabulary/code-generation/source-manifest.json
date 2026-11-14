@@ -1,0 +1,12 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-domain-vocabulary",
+  "version": 1,
+  "writes": [
+    { "path": "src/domain/vocabulary.js" },
+    { "path": "src/domain/translation.js" },
+    { "path": "src/domain/index.js" },
+    { "path": "tests/domain/vocabulary.test.js" },
+    { "path": "tests/domain/translation.test.js" }
+  ]
+}

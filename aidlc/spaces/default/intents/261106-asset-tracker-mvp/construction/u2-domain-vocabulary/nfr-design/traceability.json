@@ -1,0 +1,97 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-domain-vocabulary",
+  "unit_kind": "library",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR3.2",
+    "NFR6.1",
+    "NFR6.3",
+    "NFR6.6"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "DomainVocabulary owns eight codes+retryable; ErrorTranslation owns status column and returns { code, status, retryable }; dual-cut INTERNAL; mapDriverCode; BACKFILL_ACTOR + isBackfillActor — security-design.md## Module Layout; logical-components.md## Component Inventory"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "Single normalisation fold in DomainVocabulary; no HTTP/user content in vocabulary.js — security-design.md## Security Patterns by Requirement"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "Does not bind this unit's design: rendering/escaping is presentation-owned; vocabulary holds only fixed literals (adjudicated in security-requirements). No additional design control beyond NFR2.2.2's negative rule."
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "Empty production dependency closure; vocabulary.js + translation.js + index.js — security-design.md## Module Layout; logical-components.md## Isolation Strategy"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "Server-derived Unassigned and BACKFILL_ACTOR only; no client-settable actor source — security-design.md## Security Patterns by Requirement (actor source constraint)"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "N/A",
+      "target": "Does not bind this unit: nosniff and X-Powered-By are presentation middleware. Translation returns { code, retryable } only so it cannot override header policy."
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "Closed seven-value audit-action set in DomainVocabulary — security-design.md## Security Patterns by Requirement; logical-components.md## Component Inventory"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "mapDriverCode(SQLITE_BUSY)→BUSY_RETRYABLE on ErrorTranslation; live busy acceptance deferred to write path — security-design.md## Reliability Design (library-scoped)"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "Additive pure unit tests beside modules — security-design.md## Testability Design"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "Requirement ids in test titles/comments — security-design.md## Testability Design"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "Assert on codes / mapDriverCode inputs never message prose — security-design.md## Testability Design"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "ErrorTranslation",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/nfr-design/logical-components.md"
+    },
+    {
+      "id": "DomainVocabulary",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/nfr-design/logical-components.md"
+    },
+    {
+      "id": "mapDriverCode",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/nfr-design/security-design.md"
+    },
+    {
+      "id": "dual-cut-fallback",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261106-asset-tracker-mvp/construction/u2-domain-vocabulary/nfr-design/security-design.md"
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "stage": "units-generation",
+  "upstream_ids": [
+    "US0.1",
+    "US1.1",
+    "US1.2",
+    "US1.3",
+    "US1.4",
+    "US2.1",
+    "US2.2",
+    "US3.1",
+    "US3.2",
+    "US3.3",
+    "US3.4",
+    "US3.5",
+    "US3.6",
+    "US3.7",
+    "US4.1",
+    "US4.2",
+    "US4.3",
+    "US5.1",
+    "US5.2",
+    "US5.3",
+    "US5.4",
+    "US5.5",
+    "US5.6",
+    "US5.7",
+    "US6.1",
+    "US6.2",
+    "US6.3",
+    "US6.4",
+    "US7.1",
+    "US7.2",
+    "US8.1",
+    "US8.2",
+    "US8.3",
+    "US8.4",
+    "US8.5",
+    "US8.6",
+    "US8.7",
+    "US8.8",
+    "US8.9",
+    "US8.10"
+  ],
+  "coverage": [
+    {
+      "id": "US0.1",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "US1.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US1.2",
+      "status": "OK",
+      "target": "U2"
+    },
+    {
+      "id": "US1.3",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US1.4",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US2.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US2.2",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US3.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US3.2",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US3.3",
+      "status": "OK",
+      "target": "U2"
+    },
+    {
+      "id": "US3.4",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US3.5",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US3.6",
+      "status": "OK",
+      "target": "U2"
+    },
+    {
+      "id": "US3.7",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US4.1",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US4.2",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "US4.3",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US5.1",
+      "status": "OK",
+      "target": "U2"
+    },
+    {
+      "id": "US5.2",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US5.3",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US5.4",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US5.5",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "US5.6",
+      "status": "OK",
+      "target": "U2"
+    },
+    {
+      "id": "US5.7",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "US6.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US6.2",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US6.3",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US6.4",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US7.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "US7.2",
+      "status": "OK",
+      "target": "U5"
+    },
+    {
+      "id": "US8.1",
+      "status": "Deferred",
+      "target": "no unit — U3 `u3-write-path` — `AssetLifecycle`, the recovery family's attachment point; the single `lost → in-stock` edge is released by US3.5 and this item extends it to partial recovery"
+    },
+    {
+      "id": "US8.2",
+      "status": "Deferred",
+      "target": "no unit — U3 `u3-write-path` — `AssetLifecycle`, the recovery family's attachment point; attributing a recovered asset's value to a person or cost centre has no released component"
+    },
+    {
+      "id": "US8.3",
+      "status": "Deferred",
+      "target": "no unit — U5 `u5-presentation` — `AssetHistory`, the recovery family's attachment point; a contested claim over who held an asset has no released component"
+    },
+    {
+      "id": "US8.4",
+      "status": "Deferred",
+      "target": "no unit — U3 `u3-write-path` — `AssetLifecycle` and U2 `u2-domain-vocabulary`, the transition table's attachment point; the edge is refused by the released table and joins it here"
+    },
+    {
+      "id": "US8.5",
+      "status": "Deferred",
+      "target": "no unit — U3 `u3-write-path` — `AssetLifecycle` and U2 `u2-domain-vocabulary`, the transition table's attachment point; the edge is refused by the released table and joins it here"
+    },
+    {
+      "id": "US8.6",
+      "status": "Deferred",
+      "target": "no unit — U5 `u5-presentation` — `ScreenPresenter`, the presentation layer's attachment point; the release renders from the existing stylesheet's vocabulary"
+    },
+    {
+      "id": "US8.7",
+      "status": "Deferred",
+      "target": "no unit — U5 `u5-presentation` — `ScreenPresenter`, the presentation layer's attachment point; the release's three recorded responsive constraints are the starting point"
+    },
+    {
+      "id": "US8.8",
+      "status": "Deferred",
+      "target": "no unit — U4 `u4-reporting` — `AssetQuery`, the search dimension's attachment point; the release keeps the existing free-text search over name and serial or key"
+    },
+    {
+      "id": "US8.9",
+      "status": "Deferred",
+      "target": "no unit — U5 `u5-presentation` — `AssetListScreen`, the list's attachment point; the released count lines are the starting point"
+    },
+    {
+      "id": "US8.10",
+      "status": "Deferred",
+      "target": "no unit — U5 `u5-presentation` — `ScreenPresenter`, the presentation layer's attachment point; the release's zero cases are handled"
+    }
+  ]
+}
