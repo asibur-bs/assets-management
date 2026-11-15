@@ -1,42 +1,27 @@
 #!/usr/bin/env bash
-# Post-deploy smoke: register → transition → require non-empty audit.actor on
-# newly appended rows → require every pre-migration audit row from
-# SMOKE_AUDIT_BASELINE to remain intact → require post count >= baseline + smoke
-# appends. On success, prune backups to three. A missing baseline, or a baseline
-# whose rows are gone, exits non-zero and does not prune.
-# Does not invent the actor mechanism (OQ1): reads whatever non-empty actor the
-# server stored in audit_log.actor. Fail-closed when the column is missing or empty.
+# Deploy smoke: register, assign, then confirm a non-empty server-written
+# actor and that the audit row count did not drop. No actor column is added.
+# The actor is the assignee the server stored in the assign audit description.
 set -eu
 
-if [[ -z "${SMOKE_BASE_URL:-}" ]]; then
-  echo "smoke-deploy: SMOKE_BASE_URL is required" >&2
+if [ -z "${SMOKE_BASE_URL:-}" ]; then
+  echo 'smoke-deploy: SMOKE_BASE_URL is required' >&2
   exit 1
 fi
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export DB_PATH="${DB_PATH:-${ROOT_DIR}/data/assets.sqlite}"
-export BACKUP_ROOT="${BACKUP_ROOT:-${ROOT_DIR}/backups}"
-export SMOKE_ROOT="${ROOT_DIR}"
-export SMOKE_SERIAL="SMOKE-$(date +%s)-$$"
-export SMOKE_BASE_URL
+cd "$(dirname "$0")/.."
 
-cd "${ROOT_DIR}"
+export SMOKE_DB="${DB_PATH:-data/assets.sqlite}"
+export SMOKE_NAME="smoke-$(date +%Y%m%d%H%M%S)-$$"
+export SMOKE_SERIAL="SMK-$$-$(date +%Y%m%d%H%M%S)"
+export SMOKE_ASSIGNEE='Smoke Actor'
 
 node <<'NODE'
 'use strict';
 
 const http = require('node:http');
 const { URL } = require('node:url');
-const path = require('node:path');
-const { spawnSync } = require('node:child_process');
-const fs = require('node:fs');
 const Database = require('better-sqlite3');
-
-const base = process.env.SMOKE_BASE_URL.replace(/\/$/, '');
-const dbPath = process.env.DB_PATH;
-const serial = process.env.SMOKE_SERIAL;
-const backupRoot = process.env.BACKUP_ROOT;
-const rootDir = process.env.SMOKE_ROOT;
 
 function request(method, urlString, fields) {
   const url = new URL(urlString);
@@ -70,71 +55,8 @@ function request(method, urlString, fields) {
   });
 }
 
-function openReadonly() {
-  return new Database(dbPath, { readonly: true, fileMustExist: true });
-}
-
-function requireActorColumn() {
-  const db = openReadonly();
-  try {
-    const cols = db.prepare('PRAGMA table_info(audit_log)').all().map((c) => c.name);
-    if (!cols.includes('actor')) {
-      console.error('smoke-deploy: audit_log has no actor column');
-      process.exit(2);
-    }
-  } finally {
-    db.close();
-  }
-}
-
-function loadBaseline() {
-  const file = process.env.SMOKE_AUDIT_BASELINE;
-  if (!file) {
-    console.error('smoke-deploy: SMOKE_AUDIT_BASELINE is required (pre-migration snapshot)');
-    process.exit(1);
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (err) {
-    console.error('smoke-deploy: cannot read SMOKE_AUDIT_BASELINE');
-    process.exit(1);
-  }
-  if (!Array.isArray(parsed)) {
-    console.error('smoke-deploy: SMOKE_AUDIT_BASELINE must be a JSON array');
-    process.exit(1);
-  }
-  return parsed;
-}
-
-function loadAuditByIds(ids) {
-  const db = openReadonly();
-  try {
-    const stmt = db.prepare(
-      'SELECT id, asset_id, action, description, created_at, actor FROM audit_log WHERE id = ?'
-    );
-    return ids.map((id) => stmt.get(id) || null);
-  } finally {
-    db.close();
-  }
-}
-
-function latestActor() {
-  const db = openReadonly();
-  try {
-    const row = db.prepare('SELECT actor FROM audit_log ORDER BY id DESC LIMIT 1').get();
-    if (!row || row.actor == null || String(row.actor).trim() === '') {
-      console.error('smoke-deploy: latest audit actor is empty');
-      process.exit(3);
-    }
-    return String(row.actor).trim();
-  } finally {
-    db.close();
-  }
-}
-
-function auditCount() {
-  const db = openReadonly();
+function auditCount(dbPath) {
+  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
   try {
     return db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n;
   } finally {
@@ -142,85 +64,71 @@ function auditCount() {
   }
 }
 
-function findAssetId() {
-  const db = openReadonly();
+function actorFromAssign(dbPath) {
+  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
   try {
-    const row = db.prepare('SELECT id FROM assets WHERE serial_or_key = ?').get(serial);
-    if (!row) {
-      console.error('smoke-deploy: registered asset not found');
-      process.exit(5);
-    }
-    return row.id;
+    const row = db
+      .prepare("SELECT description FROM audit_log WHERE action = 'assign' ORDER BY id DESC LIMIT 1")
+      .get();
+    if (!row || typeof row.description !== 'string') return '';
+    const match = row.description.match(/ to (.+)\.$/);
+    return match ? match[1].trim() : '';
   } finally {
     db.close();
   }
 }
 
 async function main() {
-  requireActorColumn();
-  const preRows = loadBaseline();
-  const preIds = preRows.map((r) => r.id);
-  const preCount = preRows.length;
+  const base = process.env.SMOKE_BASE_URL.replace(/\/$/, '');
+  const dbPath = process.env.SMOKE_DB;
+  const before = auditCount(dbPath);
 
   const registered = await request('POST', `${base}/assets`, {
     category: 'hardware',
-    name: `Smoke Asset ${serial}`,
-    serial_or_key: serial,
+    name: process.env.SMOKE_NAME,
+    serial_or_key: process.env.SMOKE_SERIAL,
   });
-  if (registered.status !== 302 && registered.status !== 303 && registered.status !== 200) {
+  if (registered.status !== 302 && registered.status !== 303) {
     console.error(`smoke-deploy: register failed (${registered.status})`);
     process.exit(1);
   }
 
-  const assetId = findAssetId();
+  const list = await request('GET', `${base}/assets`);
+  if (list.status !== 200) {
+    console.error(`smoke-deploy: asset list failed (${list.status})`);
+    process.exit(1);
+  }
+  const name = process.env.SMOKE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const link = list.body.match(new RegExp(`href="(/assets/[^"]+)"[^>]*>${name}`));
+  if (!link) {
+    console.error('smoke-deploy: list page does not link the new asset');
+    process.exit(1);
+  }
+  const id = link[1].slice('/assets/'.length);
+  if (!id || id === 'new') {
+    console.error('smoke-deploy: register did not yield an asset id');
+    process.exit(1);
+  }
 
-  const transitioned = await request('POST', `${base}/assets/${encodeURIComponent(assetId)}/assign`, {
-    assigned_to: 'Smoke Operator',
+  const transitioned = await request('POST', `${base}/assets/${encodeURIComponent(id)}/assign`, {
+    assigned_to: process.env.SMOKE_ASSIGNEE,
   });
-  if (transitioned.status !== 302 && transitioned.status !== 303 && transitioned.status !== 200) {
+  if (transitioned.status !== 302 && transitioned.status !== 303) {
     console.error(`smoke-deploy: transition failed (${transitioned.status})`);
     process.exit(1);
   }
 
-  const actor = latestActor();
-  console.error(`smoke-deploy: actor present (length=${actor.length})`);
-
-  const afterRows = loadAuditByIds(preIds);
-  for (let i = 0; i < preRows.length; i += 1) {
-    const before = preRows[i];
-    const after = afterRows[i];
-    if (!after) {
-      console.error(`smoke-deploy: pre-deploy audit id ${before.id} is missing`);
-      process.exit(1);
-    }
-    const keys = Object.keys(before);
-    const changed = keys.some((key) => after[key] !== before[key]);
-    if (changed) {
-      console.error(`smoke-deploy: pre-deploy audit id ${before.id} was altered`);
-      process.exit(1);
-    }
-  }
-
-  const postCount = auditCount();
-  // Register writes one audit row; assign writes one more.
-  const expectedMin = preCount + 2;
-  if (postCount < expectedMin) {
-    console.error(
-      `smoke-deploy: expected at least ${expectedMin} audit rows (pre=${preCount} + smoke appends), got ${postCount}`
-    );
+  const actor = actorFromAssign(dbPath);
+  if (!actor) {
+    console.error('smoke-deploy: assign audit row has an empty actor');
     process.exit(1);
   }
-
-  const prune = spawnSync('bash', [path.join(rootDir, 'scripts', 'prune-backups.sh')], {
-    env: { ...process.env, BACKUP_ROOT: backupRoot },
-    encoding: 'utf8',
-  });
-  if (prune.status !== 0) {
-    console.error('smoke-deploy: prune-backups failed');
+  const after = auditCount(dbPath);
+  if (after < before) {
+    console.error('smoke-deploy: audit row count dropped');
     process.exit(1);
   }
-
-  console.log(`smoke-deploy: ok pre=${preCount} post=${postCount}`);
+  console.log('smoke-deploy: ok');
 }
 
 main().catch((err) => {

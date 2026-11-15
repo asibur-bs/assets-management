@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Stop-then-copy backup. Refuses while src/server.js is still running.
 # Copies the database and, when present, the WAL and SHM sidecars.
-# Does not prune: retention of the three newest copies happens only after a
-# successful smoke (scripts/prune-backups.sh). Never prints file contents.
+# Keeps the three newest timestamp directories. Never prints file contents.
 set -eu
 
 server_is_running() {
@@ -46,4 +45,13 @@ if [ -f "${db_path}-shm" ]; then
   cp -- "${db_path}-shm" "$dest/$(basename "${db_path}-shm")"
 fi
 
-echo "backup-database: wrote ${dest}" >&2
+mapfile -t stamps < <(find "$backup_root" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -E '^[0-9]{8}-[0-9]{6}$' | sort)
+count=${#stamps[@]}
+if [ "$count" -gt 3 ]; then
+  remove=$((count - 3))
+  index=0
+  while [ "$index" -lt "$remove" ]; do
+    rm -rf -- "$backup_root/${stamps[$index]}"
+    index=$((index + 1))
+  done
+fi

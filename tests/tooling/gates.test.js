@@ -141,7 +141,7 @@ describe('delivery gates', () => {
     expect(auditIdx).toBeGreaterThan(coverageIdx);
   });
 
-  it('NFR3.5.1 — backup copies DB, WAL, and SHM and leaves every timestamp directory', () => {
+  it('NFR3.5.1 — backup copies DB, WAL, and SHM and keeps three timestamp directories', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'u6-backup-'));
     temps.push(tmp);
     const dbPath = path.join(tmp, 'assets.sqlite');
@@ -162,7 +162,7 @@ describe('delivery gates', () => {
       expect(result.status).toBe(0);
     }
     const dirs = fs.readdirSync(backupRoot).sort();
-    expect(dirs).toEqual(stamps);
+    expect(dirs).toEqual(['20260101-000002', '20260101-000003', '20260101-000004']);
     for (const stamp of dirs) {
       const dest = path.join(backupRoot, stamp);
       expect(fs.readFileSync(path.join(dest, 'assets.sqlite'))).toEqual(Buffer.from('main-db-bytes'));

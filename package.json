@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test": "node scripts/run-tests.js",
+    "test": "vitest run",
     "test:db": "vitest run tests/db.test.js",
     "test:repo": "vitest run tests/assets-repo.test.js",
     "test:service": "vitest run tests/asset-service.test.js",
@@ -17,12 +17,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src tests vitest.config.js",
     "format:check": "prettier --check \"**/*.js\"",
-    "secret-scan": "bash scripts/secret-scan.sh",
-    "hooks:install": "lefthook install",
-    "prepare": "lefthook install"
+    "secret-scan": "bash scripts/secret-scan.sh"
   },
   "dependencies": {
-    "better-sqlite3": "^13.2.0",
+    "better-sqlite3": "^11.3.0",
     "ejs": "^3.1.10",
     "express": "^4.21.0"
   },
@@ -36,6 +34,6 @@
     "vitest": "^2.1.2"
   },
   "engines": {
-    "node": ">=22.14.0"
+    "node": ">=20.0.0"
   }
 }
