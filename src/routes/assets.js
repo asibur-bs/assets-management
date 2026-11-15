@@ -16,6 +16,7 @@ const {
 } = require('../domain/vocabulary');
 
 const REASON_ACTIONS = new Set(['mark-lost', 'discarded', 'recovered']);
+const PAGE_SIZE = 20;
 
 const ACTION_TO = {
   assign: 'assigned',
@@ -234,6 +235,65 @@ function exportQuery(filters) {
   return pairs.join('&');
 }
 
+function parsePage(value) {
+  const text = queryString(value).trim();
+  if (!/^[1-9]\d*$/.test(text)) return 1;
+  const page = Number(text);
+  return Number.isSafeInteger(page) ? page : 1;
+}
+
+function listHref(filters, page) {
+  const pairs = [];
+  const add = (key, value) => {
+    if (value) pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  };
+  add('search_text', filters.search_text);
+  add('category', filters.category);
+  add('status', filters.status);
+  if (filters.sort_column && filters.sort_column !== 'name') add('sort_column', filters.sort_column);
+  if (filters.sort_direction && filters.sort_direction !== 'asc') add('sort_direction', filters.sort_direction);
+  add('holder', filters.holder);
+  if (page > 1) add('page', String(page));
+  const query = pairs.join('&');
+  return query.length > 0 ? `/assets?${query}` : '/assets';
+}
+
+function pageWindow(page, pageCount) {
+  const start = Math.max(1, page - 2);
+  const end = Math.min(pageCount, page + 2);
+  const pages = [];
+  if (start > 1) pages.push(1);
+  if (start > 2) pages.push(null);
+  for (let number = Math.max(start, 1); number <= end; number += 1) {
+    if (!pages.includes(number)) pages.push(number);
+  }
+  if (end < pageCount - 1) pages.push(null);
+  if (end < pageCount) pages.push(pageCount);
+  return pages;
+}
+
+function paginate(filters, rows, requestedPage) {
+  const matching = rows.length;
+  const pageCount = Math.max(1, Math.ceil(matching / PAGE_SIZE));
+  const page = Math.min(parsePage(requestedPage), pageCount);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const assets = rows.slice(startIndex, startIndex + PAGE_SIZE);
+  const pages = pageWindow(page, pageCount).map((number) =>
+    number == null ? { ellipsis: true } : { page: number, href: listHref(filters, number), current: number === page }
+  );
+  return {
+    assets,
+    matching,
+    page,
+    pageCount,
+    rangeStart: matching === 0 ? 0 : startIndex + 1,
+    rangeEnd: matching === 0 ? 0 : startIndex + assets.length,
+    prevHref: page > 1 ? listHref(filters, page - 1) : null,
+    nextHref: page < pageCount ? listHref(filters, page + 1) : null,
+    pages,
+  };
+}
+
 function listRows(db, sanitized) {
   const rows = service.listAssets(db, {
     q: sanitized.search_text || null,
@@ -339,7 +399,11 @@ function presentHolders(result) {
       const chipSource = row.chips || row.bucket_counts || row.buckets || row.counts;
       const chips = chipSource ? chipEntries(chipSource) : [];
       const total =
-        row.total != null ? row.total : row.count != null ? row.count : chips.reduce((sum, chip) => sum + chip.count, 0);
+        row.total != null
+          ? row.total
+          : row.count != null
+            ? row.count
+            : chips.reduce((sum, chip) => sum + chip.count, 0);
       const neverHeld = row.neverHeld === true || row.isHolder === false || name === UNASSIGNED_DESIGNATION;
       return {
         name,
@@ -378,13 +442,14 @@ function assetsRouter(db) {
     try {
       const sanitized = readFilter(req.query);
       const filters = formFilters(sanitized);
-      const assets = listRows(db, sanitized);
+      const page = paginate(filters, listRows(db, sanitized), req.query.page);
       res.render('list', {
-        assets,
+        assets: page.assets,
         filters,
         exportQuery: exportQuery(filters),
-        shown: assets.length,
-        matching: assets.length,
+        shown: page.assets.length,
+        matching: page.matching,
+        pagination: page,
       });
     } catch (err) {
       next(err);
@@ -428,7 +493,9 @@ function assetsRouter(db) {
       if (err.code === 'VALIDATION_ERROR' || err.code === 'DUPLICATE_ASSET') {
         const values = formValues(req.body);
         const collision =
-          err.code === 'DUPLICATE_ASSET' ? advisoryWarning(db, { ...values, serial_or_key: input.serialOrKey }, null) : null;
+          err.code === 'DUPLICATE_ASSET'
+            ? advisoryWarning(db, { ...values, serial_or_key: input.serialOrKey }, null)
+            : null;
         return res.status(translate(err.code).status).render(
           'new',
           newFormLocals({

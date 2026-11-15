@@ -22,6 +22,24 @@
       link.addEventListener('click', function () { setOpen(false); });
     });
   }
+  var collapseBtn = document.querySelector('[data-sidebar-collapse]');
+  function setCollapsed(collapsed) {
+    document.documentElement.classList.toggle('sidebar-collapsed', collapsed);
+    if (!collapseBtn) return;
+    collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    collapseBtn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    try {
+      localStorage.setItem('asset-tracker-sidebar', collapsed ? 'collapsed' : 'expanded');
+    } catch (err) {
+      /* the choice still applies for this page */
+    }
+  }
+  if (collapseBtn) {
+    setCollapsed(document.documentElement.classList.contains('sidebar-collapsed'));
+    collapseBtn.addEventListener('click', function () {
+      setCollapsed(!document.documentElement.classList.contains('sidebar-collapsed'));
+    });
+  }
   function openDialog(dialog) {
     if (!dialog || typeof dialog.showModal !== 'function' || dialog.open) return;
     dialog.showModal();
@@ -46,6 +64,19 @@
     var focus = dialog.querySelector('[autofocus]');
     if (focus) focus.focus();
   });
+  var themeSelect = document.getElementById('theme-select');
+  if (themeSelect) {
+    var current = document.documentElement.getAttribute('data-theme') || 'system';
+    if (themeSelect.querySelector('option[value="' + current + '"]')) themeSelect.value = current;
+    themeSelect.addEventListener('change', function () {
+      document.documentElement.setAttribute('data-theme', themeSelect.value);
+      try {
+        localStorage.setItem('asset-tracker-theme', themeSelect.value);
+      } catch (err) {
+        /* the choice still applies for this page */
+      }
+    });
+  }
 })();
 </script>
 </body>

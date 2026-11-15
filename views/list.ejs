@@ -45,7 +45,11 @@
 <% if (filters.holder) { %>
   <p class="count-line" data-testid="active-holder">Holder <%= filters.holder %></p>
 <% } %>
-<p class="count-line muted" data-testid="count-line">Showing <%= shown %> of <%= matching %> records</p>
+<% if (matching === 0) { %>
+  <p class="count-line muted" data-testid="count-line">Showing 0 of 0 records</p>
+<% } else { %>
+  <p class="count-line muted" data-testid="count-line">Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= matching %> records</p>
+<% } %>
 
 <div class="table-scroll">
 <table class="asset-table" data-testid="asset-table">
@@ -77,6 +81,28 @@
   </tbody>
 </table>
 </div>
+<% if (pagination.pageCount > 1) { %>
+<nav class="pagination" aria-label="Asset pages" data-testid="pagination">
+  <% if (pagination.prevHref) { %>
+    <a class="btn" href="<%= pagination.prevHref %>" data-testid="page-prev" rel="prev">Previous</a>
+  <% } else { %>
+    <span class="btn is-disabled" aria-disabled="true" data-testid="page-prev">Previous</span>
+  <% } %>
+  <% pagination.pages.forEach(function (item) { %>
+    <% if (item.ellipsis) { %>
+      <span class="ellipsis" aria-hidden="true">…</span>
+    <% } else { %>
+      <a class="btn<%= item.current ? ' current' : '' %>" href="<%= item.href %>" data-testid="page-<%= item.page %>"<% if (item.current) { %> aria-current="page"<% } %>><%= item.page %></a>
+    <% } %>
+  <% }); %>
+  <% if (pagination.nextHref) { %>
+    <a class="btn" href="<%= pagination.nextHref %>" data-testid="page-next" rel="next">Next</a>
+  <% } else { %>
+    <span class="btn is-disabled" aria-disabled="true" data-testid="page-next">Next</span>
+  <% } %>
+  <span class="page-status" data-testid="page-status">Page <%= pagination.page %> of <%= pagination.pageCount %></span>
+</nav>
+<% } %>
 <p class="legend" data-testid="status-legend">Legend:
   <% statuses.forEach(function (status) { %>
     <span class="status status-<%= status %>"><%= statusLabel(status) %></span>

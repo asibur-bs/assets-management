@@ -4,22 +4,80 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title><%= typeof title !== 'undefined' ? title : 'Asset Tracker' %></title>
+<script>
+(function () {
+  var allowed = ['system', 'light', 'dark', 'ocean', 'forest', 'sunset', 'contrast'];
+  var stored = 'system';
+  try {
+    var saved = localStorage.getItem('asset-tracker-theme');
+    if (saved && allowed.indexOf(saved) !== -1) stored = saved;
+  } catch (err) {
+    stored = 'system';
+  }
+  document.documentElement.setAttribute('data-theme', stored);
+  try {
+    if (localStorage.getItem('asset-tracker-sidebar') === 'collapsed') {
+      document.documentElement.classList.add('sidebar-collapsed');
+    }
+  } catch (err) {
+    /* the sidebar stays expanded when storage is unavailable */
+  }
+})();
+</script>
 <link rel="stylesheet" href="/static/styles.css" />
 </head>
-<body>
-<a class="skip" href="#main" data-testid="skip-link">Skip to main content</a>
 <% var here = typeof path === 'undefined' ? '' : path; %>
 <% var titleText = typeof pageTitle !== 'undefined' ? pageTitle : 'Asset Tracker'; %>
 <% var kind = typeof headerKind !== 'undefined' ? headerKind : ''; %>
+<body<% if (kind === 'assets') { %> class="list-page"<% } %>>
+<a class="skip" href="#main" data-testid="skip-link">Skip to main content</a>
 <div class="shell">
 <aside id="sidebar" class="sidebar">
-  <a class="brand" href="/assets" data-testid="nav-brand">Asset Tracker</a>
+  <div class="sidebar-head">
+    <a class="brand" href="/assets" data-testid="nav-brand" title="Asset Tracker">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M12 12.2 20 8M12 12.2 4 8M12 12.2V20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-text">Asset Tracker</span>
+    </a>
+  </div>
   <nav class="nav" aria-label="Primary">
-    <a class="nav-link" href="/dashboard" data-testid="nav-dashboard" <% if (here === '/dashboard') { %>aria-current="page"<% } %>>Dashboard</a>
-    <a class="nav-link" href="/assets" data-testid="nav-assets" <% if (here === '/assets' || here.indexOf('/assets/') === 0) { %>aria-current="page"<% } %>>Assets</a>
-    <a class="nav-link" href="/holders" data-testid="nav-holders" <% if (here === '/holders') { %>aria-current="page"<% } %>>Holders</a>
+    <a class="nav-link" href="/dashboard" data-testid="nav-dashboard" title="Dashboard" <% if (here === '/dashboard') { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-link" href="/assets" data-testid="nav-assets" title="Assets" <% if (here === '/assets' || here.indexOf('/assets/') === 0) { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 7.5h16v11H4v-11Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M4 11.5h16M9 7.5V5.2h6V7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-label">Assets</span>
+    </a>
+    <a class="nav-link" href="/holders" data-testid="nav-holders" title="Holders" <% if (here === '/holders') { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="9" cy="8" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="16.5" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M3.8 18.5c1.1-2.7 3.2-4 5.2-4s4.1 1.3 5.2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M14.2 14.7c1.3-.6 2.7-.7 4 .1 1 1.4 1.6 2.6 1.9 3.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Holders</span>
+    </a>
   </nav>
 </aside>
+<button type="button" class="btn sidebar-toggle" data-sidebar-collapse data-testid="sidebar-collapse" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
+  <svg class="nav-icon icon-collapse" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <svg class="nav-icon icon-expand" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
 <button type="button" class="backdrop" data-close-sidebar aria-label="Close menu"></button>
 <div class="workspace">
 <header class="topbar">
@@ -35,6 +93,17 @@
       <a class="btn" href="/assets" data-testid="back-to-list">Back to list</a>
     <% } %>
     <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
+    <label class="theme-switch">Theme
+      <select id="theme-select" data-testid="theme-select">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="ocean">Ocean</option>
+        <option value="forest">Forest</option>
+        <option value="sunset">Sunset</option>
+        <option value="contrast">High contrast</option>
+      </select>
+    </label>
     <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
   </div>
 </header>
