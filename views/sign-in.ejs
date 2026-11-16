@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in — Asset Tracker</title>
+<link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="sign-in-body">
+<main class="sign-in-card" id="main">
+  <h1>Asset Tracker</h1>
+  <p class="muted">Sign in to continue.</p>
+  <% if (error) { %>
+    <p class="error" role="alert" data-testid="sign-in-error"><%= error %></p>
+  <% } %>
+  <form method="post" action="/sign-in" class="form" data-testid="sign-in-form">
+    <input type="hidden" name="next" value="<%= next %>" />
+    <label>
+      Username
+      <input type="text" name="username" required autocomplete="username" value="<%= username %>" data-testid="sign-in-username" />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" required autocomplete="current-password" data-testid="sign-in-password" />
+    </label>
+    <button type="submit" class="btn primary" data-testid="sign-in-submit">Sign in</button>
+  </form>
+</main>
+</body>
+</html>

@@ -26,9 +26,13 @@
       <p class="muted" data-testid="discarded-note">This asset was discarded. It is no longer part of Active Inventory, but its record and its history are kept.</p>
     <% } %>
     <div class="actions" data-testid="actions">
-      <% actions.forEach(function (action) { %>
+      <% if (!canWrite) { %>
+        <p class="muted" data-testid="read-only-note">You can view this asset. An administrator records changes.</p>
+      <% } %>
+      <% if (canWrite) { actions.forEach(function (action) { %>
         <% if (action.action === 'assign') { %>
           <form method="post" action="/assets/<%= asset.id %>" class="inline" data-testid="form-assign">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <input type="hidden" name="action" value="assign" />
             <label class="field">Assign to
               <input type="text" name="holder" required data-testid="assign-holder" />
@@ -37,6 +41,7 @@
           </form>
         <% } else if (action.action === 'return') { %>
           <form method="post" action="/assets/<%= asset.id %>" class="action-form" data-testid="form-return">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <input type="hidden" name="action" value="return" />
             <button type="submit" class="btn" data-testid="action-return">Mark returned</button>
           </form>
@@ -49,6 +54,7 @@
             </div>
             <p id="reason-consequence-<%= action.action %>" data-testid="reason-consequence-<%= action.action %>"><%= action.consequence %></p>
             <form method="post" action="/assets/<%= asset.id %>" class="form dialog-form" data-testid="form-<%= action.action %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
               <input type="hidden" name="action" value="<%= action.action %>" />
               <label for="reason-select-<%= action.action %>"><%= action.reasonLabel %></label>
               <select id="reason-select-<%= action.action %>" name="reason" required aria-required="true" data-testid="reason-<%= action.action %>" <%= reasonError && reasonError.action === action.action ? 'autofocus' : '' %>>
@@ -69,6 +75,7 @@
         <% } %>
       <% }); %>
       <a class="btn" href="/assets/<%= asset.id %>/edit" data-testid="action-edit">Edit asset</a>
+      <% } %>
     </div>
   </aside>
 </div>

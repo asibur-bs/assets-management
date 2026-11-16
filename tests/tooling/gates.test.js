@@ -209,12 +209,25 @@ describe('delivery gates', () => {
     });
     const baseline = path.join(tmp, 'audit-baseline.json');
     fs.writeFileSync(baseline, '[]');
+    const admin = spawnSync('node', ['src/create-admin.js'], {
+      cwd: root,
+      env: localEnv({
+        DB_PATH: dbPath,
+        ASSET_ADMIN_USERNAME: 'smoke',
+        ASSET_ADMIN_DISPLAY_NAME: 'Smoke Admin',
+        ASSET_ADMIN_PASSWORD: 'smoke-password-1',
+      }),
+      encoding: 'utf8',
+    });
+    expect(admin.status).toBe(0);
     const result = spawnSync('bash', [smokeScript], {
       cwd: root,
       env: localEnv({
         SMOKE_BASE_URL: `http://127.0.0.1:${port}`,
         DB_PATH: dbPath,
         SMOKE_AUDIT_BASELINE: baseline,
+        SMOKE_USERNAME: 'smoke',
+        SMOKE_PASSWORD: 'smoke-password-1',
       }),
       encoding: 'utf8',
     });

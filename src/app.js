@@ -2,7 +2,7 @@
 
 const path = require('node:path');
 const express = require('express');
-const { resolveActor } = require('./actor');
+const { attachPrincipal, requireCsrf, requireUser } = require('./auth/guard');
 const { translate } = require('./domain/translation');
 const {
   CATEGORY_VALUES,
@@ -13,6 +13,8 @@ const {
   statusLabel,
 } = require('./domain/vocabulary');
 const assetsRouter = require('./routes/assets');
+const { mountAuthRoutes, signOut } = require('./routes/auth');
+const { mountUserRoutes } = require('./routes/users');
 
 const SORT_LABELS = {
   name: 'Name',
@@ -47,19 +49,28 @@ function createApp(db) {
 
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.locals.actor = resolveActor();
     res.locals.path = req.path;
     next();
   });
   app.use(express.urlencoded({ extended: false }));
   app.use('/static', express.static(path.join(__dirname, '..', 'public')));
+  app.use(attachPrincipal(db));
+  mountAuthRoutes(app, db);
+  app.use(requireUser);
+  app.use(requireCsrf);
+  app.post('/sign-out', signOut(db));
 
   app.get('/', (req, res) => res.redirect('/assets'));
+  mountUserRoutes(app, db);
   assetsRouter.mountAuxiliaryRoutes(app, db);
   app.use('/assets', assetsRouter(db));
 
   app.use((err, req, res, next) => {
     if (res.headersSent) return next(err);
+    if (err && err.code === 'FORBIDDEN') {
+      res.status(403).render('error', { message: err.message, code: 'FORBIDDEN' });
+      return;
+    }
     const translated = translate(err && err.code);
     const known = err && err.code && translated.code === err.code;
     const status = known ? translated.status : 500;

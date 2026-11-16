@@ -21,6 +21,7 @@
   </div>
 <% } %>
 <form method="post" action="<%= formAction %>" class="form" data-testid="<%= formTestId %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
   <% if (hiddenAction) { %>
     <input type="hidden" name="action" value="<%= hiddenAction %>" />
   <% } %>

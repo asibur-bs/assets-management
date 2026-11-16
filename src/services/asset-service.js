@@ -2,6 +2,7 @@
 
 const repo = require('../repositories/assets-repo');
 const { resolveActor } = require('../actor');
+const { signedInDisplayName, signedInRole } = require('../auth/principal');
 const { findTransition, isAcceptableReason } = require('../domain/vocabulary');
 
 function makeError(message, code) {
@@ -23,6 +24,16 @@ function mapSqliteError(err) {
     return makeError('The database is busy; retry the write.', 'BUSY_RETRYABLE');
   }
   return err;
+}
+
+function actingName() {
+  return signedInDisplayName() || resolveActor();
+}
+
+function assertCanMutate() {
+  const role = signedInRole();
+  if (role == null || role === 'administrator') return;
+  throw makeError('You do not have permission to change assets.', 'FORBIDDEN');
 }
 
 function inImmediate(db, fn) {
@@ -184,7 +195,8 @@ function registerAsset(db, input) {
     throw err;
   }
   return inImmediate(db, () => {
-    const actor = resolveActor();
+    assertCanMutate();
+    const actor = actingName();
     const asset = repo.createAsset(db, fields);
     repo.recordAudit(db, asset.id, 'create', describeCreate(asset), actor);
     return asset;
@@ -193,7 +205,8 @@ function registerAsset(db, input) {
 
 function editAsset(db, id, input) {
   return inImmediate(db, () => {
-    const actor = resolveActor();
+    assertCanMutate();
+    const actor = actingName();
     const current = repo.getAsset(db, id);
     if (!current) throw makeError('Asset not found.', 'NOT_FOUND');
     const next = projectEdit(current, input);
@@ -220,7 +233,8 @@ function editAsset(db, id, input) {
 function transitionAsset(db, id, input) {
   const request = asObject(input);
   return inImmediate(db, () => {
-    const actor = resolveActor();
+    assertCanMutate();
+    const actor = actingName();
     const current = repo.getAsset(db, id);
     if (!current) throw makeError('Asset not found.', 'NOT_FOUND');
     const edge = findTransition(current.status, request.to);

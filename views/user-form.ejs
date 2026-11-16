@@ -1,0 +1,57 @@
+<% pageTitle = mode === 'edit' ? 'Edit user' : 'New user'; headerKind = 'users'; %>
+<%- include('_header') %>
+<div class="form-page">
+<% if (errors && errors.length) { %>
+  <div class="errors" data-testid="user-errors">
+    <% errors.forEach(function (err) { %>
+      <p data-testid="user-error"><%= err %></p>
+    <% }); %>
+  </div>
+<% } %>
+<form method="post" action="<%= mode === 'edit' ? '/users/' + user.id : '/users' %>" class="form" data-testid="user-form">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+  <label>
+    Username
+    <% if (mode === 'edit') { %>
+      <input type="text" value="<%= values.username %>" disabled data-testid="user-username" />
+    <% } else { %>
+      <input type="text" name="username" required value="<%= values.username %>" autocomplete="off" data-testid="user-username" />
+    <% } %>
+  </label>
+  <label>
+    Display name
+    <input type="text" name="display_name" required value="<%= values.displayName %>" data-testid="user-display-name" />
+  </label>
+  <label>
+    Role
+    <select name="role" data-testid="user-role">
+      <% roles.forEach(function (role) { %>
+        <option value="<%= role %>" <%= values.role === role ? 'selected' : '' %>><%= role === 'administrator' ? 'Administrator' : 'Reader' %></option>
+      <% }); %>
+    </select>
+  </label>
+  <label>
+    <%= mode === 'edit' ? 'New password' : 'Password' %>
+    <input type="password" name="password" <%= mode === 'edit' ? '' : 'required' %> autocomplete="new-password" data-testid="user-password" />
+  </label>
+  <% if (mode === 'edit') { %>
+    <p class="muted">Leave the password blank to keep the current one.</p>
+    <label class="status-toggle">
+      <input type="checkbox" name="disabled" value="1" <%= values.disabled ? 'checked' : '' %> data-testid="user-disabled" />
+      <span class="status-toggle-copy">
+        <span class="status-toggle-title">
+          Disabled
+          <span class="status-toggle-pill" aria-hidden="true"><span class="when-off">Off</span><span class="when-on">On</span></span>
+        </span>
+        <span class="status-toggle-hint">They cannot sign in while this is on.</span>
+      </span>
+      <span class="status-toggle-track" aria-hidden="true"></span>
+    </label>
+  <% } %>
+  <div class="form-actions">
+    <a class="btn" href="/users">Cancel</a>
+    <button type="submit" class="btn primary" data-testid="user-save"><%= mode === 'edit' ? 'Save user' : 'Create user' %></button>
+  </div>
+</form>
+</div>
+<%- include('_footer') %>

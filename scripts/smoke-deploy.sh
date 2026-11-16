@@ -23,9 +23,17 @@ const http = require('node:http');
 const { URL } = require('node:url');
 const Database = require('better-sqlite3');
 
+let cookie = '';
+
 function request(method, urlString, fields) {
   const url = new URL(urlString);
   const body = fields ? new URLSearchParams(fields).toString() : null;
+  const headers = {};
+  if (cookie) headers.cookie = cookie;
+  if (body) {
+    headers['content-type'] = 'application/x-www-form-urlencoded';
+    headers['content-length'] = Buffer.byteLength(body);
+  }
   return new Promise((resolve, reject) => {
     const req = http.request(
       {
@@ -34,14 +42,14 @@ function request(method, urlString, fields) {
         port: url.port,
         path: `${url.pathname}${url.search}`,
         method,
-        headers: body
-          ? {
-              'content-type': 'application/x-www-form-urlencoded',
-              'content-length': Buffer.byteLength(body),
-            }
-          : {},
+        headers,
       },
       (res) => {
+        const setCookie = res.headers['set-cookie'];
+        if (setCookie) {
+          const parts = Array.isArray(setCookie) ? setCookie : [setCookie];
+          cookie = parts.map((part) => part.split(';')[0]).join('; ');
+        }
         const chunks = [];
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', () => {
@@ -81,9 +89,29 @@ function actorFromAssign(dbPath) {
 async function main() {
   const base = process.env.SMOKE_BASE_URL.replace(/\/$/, '');
   const dbPath = process.env.SMOKE_DB;
+  const username = process.env.SMOKE_USERNAME;
+  const password = process.env.SMOKE_PASSWORD;
+  if (!username || !password) {
+    console.error('smoke-deploy: SMOKE_USERNAME and SMOKE_PASSWORD are required');
+    process.exit(1);
+  }
   const before = auditCount(dbPath);
 
+  const signedIn = await request('POST', `${base}/sign-in`, { username, password });
+  if (signedIn.status !== 302 && signedIn.status !== 303) {
+    console.error(`smoke-deploy: sign-in failed (${signedIn.status})`);
+    process.exit(1);
+  }
+  const home = await request('GET', `${base}/assets`);
+  const csrfMatch = home.body.match(/name="_csrf" value="([^"]+)"/);
+  if (!csrfMatch) {
+    console.error('smoke-deploy: signed-in page has no form token');
+    process.exit(1);
+  }
+  const csrf = csrfMatch[1];
+
   const registered = await request('POST', `${base}/assets`, {
+    _csrf: csrf,
     category: 'hardware',
     name: process.env.SMOKE_NAME,
     serial_or_key: process.env.SMOKE_SERIAL,
@@ -111,6 +139,7 @@ async function main() {
   }
 
   const transitioned = await request('POST', `${base}/assets/${encodeURIComponent(id)}/assign`, {
+    _csrf: csrf,
     assigned_to: process.env.SMOKE_ASSIGNEE,
   });
   if (transitioned.status !== 302 && transitioned.status !== 303) {

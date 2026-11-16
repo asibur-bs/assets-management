@@ -2,10 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const request = require('supertest');
-const { resolveActor } = require('../src/actor');
 const { openDatabase } = require('../src/db');
 const { createApp } = require('../src/app');
+const { openSession } = require('./helpers/auth');
+const { clientFor } = require('./helpers/http');
 const { translate } = require('../src/domain/translation');
 const { latestAssetId } = require('./helpers/seed');
 
@@ -19,19 +19,29 @@ function reportingModules() {
   };
 }
 
-function postAction(app, id, fields) {
-  return request(app).post(`/assets/${id}`).type('form').send(fields);
-}
-
 describe('asset routes (integration)', () => {
   let app;
   let db;
+  let client;
+
+  function postAction(id, fields) {
+    return client.post(`/assets/${id}`).type('form').send(fields);
+  }
   const previousActor = process.env.ASSET_ACTOR;
 
   beforeEach(() => {
     delete process.env.ASSET_ACTOR;
     db = openDatabase(':memory:');
     app = createApp(db);
+    client = clientFor(
+      app,
+      openSession(db, {
+        username: 'ada',
+        displayName: 'Ada',
+        password: 'password-1',
+        role: 'administrator',
+      })
+    );
   });
 
   afterEach(() => {
@@ -41,37 +51,37 @@ describe('asset routes (integration)', () => {
   });
 
   it('GET / redirects to /assets', async () => {
-    const res = await request(app).get('/');
+    const res = await client.get('/');
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('/assets');
   });
 
   it('disables x-powered-by and sets nosniff on every response', async () => {
-    const ok = await request(app).get('/assets');
+    const ok = await client.get('/assets');
     expect(ok.headers['x-powered-by']).toBeUndefined();
     expect(ok.headers['x-content-type-options']).toBe('nosniff');
 
-    const missing = await request(app).get('/assets/missing');
+    const missing = await client.get('/assets/missing');
     expect(missing.status).toBe(404);
     expect(missing.headers['x-powered-by']).toBeUndefined();
     expect(missing.headers['x-content-type-options']).toBe('nosniff');
 
-    const redirected = await request(app).get('/');
+    const redirected = await client.get('/');
     expect(redirected.headers['x-powered-by']).toBeUndefined();
     expect(redirected.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('GET /assets renders an empty list initially', async () => {
-    const res = await request(app).get('/assets');
+    const res = await client.get('/assets');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Assets');
     expect(res.text).toContain('No assets yet.');
     expect(res.text).toContain('Showing 0 of 0 records');
-    expect(res.text).toContain(`Acting as: ${resolveActor()}`);
+    expect(res.text).toContain('Acting as: Ada');
   });
 
   it('the list form exposes the five filters and keeps holder only in the query string', async () => {
-    const res = await request(app).get('/assets');
+    const res = await client.get('/assets');
     expect(res.text).toContain('name="search_text"');
     expect(res.text).toContain('name="category"');
     expect(res.text).toContain('name="status"');
@@ -82,7 +92,7 @@ describe('asset routes (integration)', () => {
     expect(res.text).toContain('href="/assets"');
     expect(res.text).toContain('data-testid="export-csv"');
 
-    const held = await request(app).get('/assets').query({ holder: 'Alice', status: 'assigned' });
+    const held = await client.get('/assets').query({ holder: 'Alice', status: 'assigned' });
     expect(held.text).toContain('name="holder"');
     expect(held.text).toContain('type="hidden"');
     expect(held.text).toContain('data-testid="active-holder"');
@@ -92,15 +102,21 @@ describe('asset routes (integration)', () => {
   });
 
   it('POST /assets creates an in-stock asset and redirects to its detail', async () => {
-    const res = await request(app)
+    const res = await client
       .post('/assets')
       .type('form')
-      .send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001', actor: 'Mallory', assigned_to: 'Alice' });
+      .send({
+        category: 'hardware',
+        name: 'ThinkPad',
+        serial_or_key: 'TP-001',
+        actor: 'Mallory',
+        assigned_to: 'Alice',
+      });
     expect(res.status).toBe(303);
     const id = latestAssetId(db);
     expect(res.headers.location).toBe(`/assets/${id}`);
 
-    const detail = await request(app).get(`/assets/${id}`);
+    const detail = await client.get(`/assets/${id}`);
     expect(detail.status).toBe(200);
     expect(detail.text).toContain('ThinkPad');
     expect(detail.text).toContain('TP-001');
@@ -108,21 +124,29 @@ describe('asset routes (integration)', () => {
     expect(detail.text).not.toContain('Mallory');
     expect(detail.text).toContain('data-testid="asset-holder">--');
 
-    const list = await request(app).get('/assets');
+    const list = await client.get('/assets');
     expect(list.text).toContain('ThinkPad');
     expect(list.text).toContain('TP-001');
     expect(list.text).toContain('In stock');
   });
 
-  it('shows the resolved actor and ignores an actor supplied on the request', async () => {
-    process.env.ASSET_ACTOR = 'Casey';
-    const res = await request(app)
+  it('shows the signed-in person and ignores an actor supplied on the request', async () => {
+    const casey = clientFor(
+      app,
+      openSession(db, {
+        username: 'casey',
+        displayName: 'Casey',
+        password: 'password-1',
+        role: 'administrator',
+      })
+    );
+    const res = await casey
       .post('/assets')
       .type('form')
       .send({ category: 'hardware', name: 'Dock', serial_or_key: 'DK-1', actor: 'Mallory' });
     const id = latestAssetId(db);
     expect(res.headers.location).toBe(`/assets/${id}`);
-    const detail = await request(app).get(`/assets/${id}`);
+    const detail = await casey.get(`/assets/${id}`);
     expect(detail.text).toContain('Acting as: Casey');
     expect(detail.text).toContain('data-testid="audit-actor" class="actor-person">Casey');
     expect(detail.text).not.toContain('Mallory');
@@ -130,12 +154,9 @@ describe('asset routes (integration)', () => {
   });
 
   it('POST /assets with a duplicate serial returns the form and does not write', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const before = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
-    const res = await request(app)
-      .post('/assets')
-      .type('form')
-      .send({ category: 'hardware', name: 'B', serial_or_key: 'X' });
+    const res = await client.post('/assets').type('form').send({ category: 'hardware', name: 'B', serial_or_key: 'X' });
     const after = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
     expect(res.status).toBe(translate('DUPLICATE_ASSET').status);
     expect(res.status).toBe(409);
@@ -146,18 +167,16 @@ describe('asset routes (integration)', () => {
   });
 
   it('POST /assets with a missing required field returns the form with an error', async () => {
-    const res = await request(app).post('/assets').type('form').send({ category: 'hardware', name: '' });
+    const res = await client.post('/assets').type('form').send({ category: 'hardware', name: '' });
     expect(res.status).toBe(translate('VALIDATION_ERROR').status);
     expect(res.text).toContain('required');
     expect(res.text).toContain('data-testid="new-form"');
   });
 
   it('GET /assets/serial-check warns on a collision and does not write', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const before = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
-    const res = await request(app)
-      .get('/assets/serial-check')
-      .query({ category: 'hardware', serial_or_key: 'X', name: 'B' });
+    const res = await client.get('/assets/serial-check').query({ category: 'hardware', serial_or_key: 'X', name: 'B' });
     const after = db.prepare('SELECT COUNT(*) AS n FROM assets').get().n;
     expect(res.status).toBe(200);
     expect(res.text).toContain('data-testid="serial-warning"');
@@ -165,81 +184,81 @@ describe('asset routes (integration)', () => {
     expect(res.text).toContain('Open existing asset');
     expect(after).toBe(before);
 
-    const other = await request(app)
+    const other = await client
       .get('/assets/serial-check')
       .query({ category: 'software-license', serial_or_key: 'X', name: 'B' });
     expect(other.text).not.toContain('data-testid="serial-warning"');
   });
 
   it('POST /assets/:id assign, return, and mark-lost call the transition', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
 
-    const assigned = await postAction(app, id, { action: 'assign', holder: 'Alice' });
+    const assigned = await postAction(id, { action: 'assign', holder: 'Alice' });
     expect(assigned.status).toBe(303);
     expect(assigned.headers.location).toBe(`/assets/${id}`);
-    const afterAssign = await request(app).get(`/assets/${id}`);
+    const afterAssign = await client.get(`/assets/${id}`);
     expect(afterAssign.text).toContain('>Assigned</span>');
     expect(afterAssign.text).toContain('data-testid="asset-holder">Alice');
 
-    const returned = await postAction(app, id, { action: 'return' });
+    const returned = await postAction(id, { action: 'return' });
     expect(returned.status).toBe(303);
-    const afterReturn = await request(app).get(`/assets/${id}`);
+    const afterReturn = await client.get(`/assets/${id}`);
     expect(afterReturn.text).toContain('>Returned</span>');
     expect(afterReturn.text).toContain('data-testid="asset-holder">--');
     expect(afterReturn.text).toContain('data-testid="asset-last-holder">Alice');
 
-    const lost = await postAction(app, id, { action: 'mark-lost', reason: 'stolen' });
+    const lost = await postAction(id, { action: 'mark-lost', reason: 'stolen' });
     expect(lost.status).toBe(303);
-    const afterLost = await request(app).get(`/assets/${id}`);
+    const afterLost = await client.get(`/assets/${id}`);
     expect(afterLost.text).toContain('>Lost</span>');
   });
 
   it('a reason-less loss writes nothing and explains that a reason is required', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
     const before = db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n;
-    const res = await postAction(app, id, { action: 'mark-lost', reason: '' });
+    const res = await postAction(id, { action: 'mark-lost', reason: '' });
     const after = db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n;
     expect(res.status).toBe(400);
     expect(res.text).toContain('A reason is required.');
     expect(after).toBe(before);
-    const detail = await request(app).get(`/assets/${id}`);
+    const detail = await client.get(`/assets/${id}`);
     expect(detail.text).toContain('>In stock</span>');
   });
 
   it('POST return on an in-stock asset is rejected as an invalid transition', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
-    const res = await postAction(app, id, { action: 'return' });
+    const res = await postAction(id, { action: 'return' });
     expect(res.status).toBe(translate('INVALID_TRANSITION').status);
     expect(res.text).toContain('That change is not available for this asset');
     expect(res.text).toContain('In stock');
   });
 
   it('POST /assets/:id/delete maps ASSET_DELETE_REFUSED to 405 and keeps the asset', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const id = latestAssetId(db);
-    const res = await request(app).post(`/assets/${id}/delete`).type('form').send({ actor: 'Mallory' });
+    const res = await client.post(`/assets/${id}/delete`).type('form').send({ actor: 'Mallory' });
     expect(res.status).toBe(translate('ASSET_DELETE_REFUSED').status);
     expect(res.status).toBe(405);
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['x-powered-by']).toBeUndefined();
     expect(res.text).toContain('Deleting an asset is refused.');
     expect(res.text).toContain('ASSET_DELETE_REFUSED');
-    const detail = await request(app).get(`/assets/${id}`);
+    const detail = await client.get(`/assets/${id}`);
     expect(detail.status).toBe(200);
     expect(detail.text).toContain('>A</h1>');
   });
 
   it('GET /assets/:id for an unknown id returns 404', async () => {
-    const res = await request(app).get('/assets/missing');
+    const res = await client.get('/assets/missing');
     expect(res.status).toBe(translate('NOT_FOUND').status);
     expect(res.text).toContain('Asset not found.');
   });
 
   it('renders the registration form without an assignee or actor field', async () => {
-    const res = await request(app).get('/assets/new');
+    const res = await client.get('/assets/new');
     expect(res.text).toContain('data-testid="new-form"');
     expect(res.text).toContain('data-testid="field-category"');
     expect(res.text).toContain('data-testid="field-name"');
@@ -252,18 +271,18 @@ describe('asset routes (integration)', () => {
   });
 
   it('edits an asset, refuses a colliding serial, and ignores the asset being edited', async () => {
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
     const first = latestAssetId(db);
-    await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'B', serial_or_key: 'Y' });
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'B', serial_or_key: 'Y' });
     const second = latestAssetId(db);
 
-    const selfCheck = await request(app)
+    const selfCheck = await client
       .get(`/assets/${second}/serial-check`)
       .query({ category: 'hardware', serial_or_key: 'Y', name: 'B' });
     expect(selfCheck.status).toBe(200);
     expect(selfCheck.text).not.toContain('data-testid="serial-warning"');
 
-    const saved = await request(app).post(`/assets/${second}/edit`).type('form').send({
+    const saved = await client.post(`/assets/${second}/edit`).type('form').send({
       action: 'edit',
       category: 'hardware',
       name: 'B2',
@@ -273,12 +292,12 @@ describe('asset routes (integration)', () => {
     });
     expect(saved.status).toBe(303);
     expect(saved.headers.location).toBe(`/assets/${second}`);
-    const detail = await request(app).get(`/assets/${second}`);
+    const detail = await client.get(`/assets/${second}`);
     expect(detail.text).toContain('B2');
     expect(detail.text).toContain('Tower');
     expect(detail.text).toContain('>edit</span>');
 
-    const collide = await request(app).post(`/assets/${second}/edit`).type('form').send({
+    const collide = await client.post(`/assets/${second}/edit`).type('form').send({
       action: 'edit',
       category: 'hardware',
       name: 'B2',
@@ -287,10 +306,10 @@ describe('asset routes (integration)', () => {
     expect(collide.status).toBe(409);
     expect(collide.text).toContain('data-testid="collision-block"');
     expect(collide.text).toContain(`/assets/${first}`);
-    const unchanged = await request(app).get(`/assets/${second}`);
+    const unchanged = await client.get(`/assets/${second}`);
     expect(unchanged.text).toContain('data-testid="asset-serial">Y');
 
-    const missingAction = await request(app)
+    const missingAction = await client
       .post(`/assets/${second}/edit`)
       .type('form')
       .send({ category: 'hardware', name: 'Nope', serial_or_key: 'Y' });
@@ -298,7 +317,7 @@ describe('asset routes (integration)', () => {
   });
 
   it('links the registration form from the list view', async () => {
-    const res = await request(app).get('/assets');
+    const res = await client.get('/assets');
     expect(res.text).toContain('href="/assets/new"');
   });
 
@@ -309,11 +328,14 @@ describe('asset routes (integration)', () => {
     it('GET /assets/export serves the current filter as CSV', async () => {
       expect(reporting.csv.CSV_CONTENT_TYPE).toBe('text/csv; charset=utf-8');
       expect(reporting.csv.CSV_FILENAME).toBe('assets-export.csv');
-      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001' });
+      await client
+        .post('/assets')
+        .type('form')
+        .send({ category: 'hardware', name: 'ThinkPad', serial_or_key: 'TP-001' });
       const filter = { category: 'hardware', search_text: 'Think' };
       const rows = reporting.query.queryAssets(db, filter);
       const expected = reporting.csv.renderCsv(rows);
-      const res = await request(app).get('/assets/export').query(filter);
+      const res = await client.get('/assets/export').query(filter);
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe(reporting.csv.CSV_CONTENT_TYPE);
       expect(res.headers['content-disposition']).toBe(`attachment; filename="${reporting.csv.CSV_FILENAME}"`);
@@ -329,9 +351,9 @@ describe('asset routes (integration)', () => {
     it.skip('GET /holders requires src/reporting/query.js listHolders, which is not present', () => {});
   } else {
     it('GET /dashboard renders the count figures', async () => {
-      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+      await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
       const figures = reporting.query.countFigures(db, {});
-      const res = await request(app).get('/dashboard');
+      const res = await client.get('/dashboard');
       expect(res.status).toBe(200);
       expect(res.headers['x-content-type-options']).toBe('nosniff');
       expect(res.text).toContain('Reconciliation');
@@ -348,11 +370,11 @@ describe('asset routes (integration)', () => {
     });
 
     it('GET /holders links each holder row to the filtered asset list', async () => {
-      await request(app).post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
+      await client.post('/assets').type('form').send({ category: 'hardware', name: 'A', serial_or_key: 'X' });
       const id = latestAssetId(db);
-      await postAction(app, id, { action: 'assign', holder: 'Alice' });
+      await postAction(id, { action: 'assign', holder: 'Alice' });
       const listed = reporting.query.listHolders(db, null);
-      const res = await request(app).get('/holders');
+      const res = await client.get('/holders');
       expect(res.status).toBe(200);
       expect(res.text).toContain('Holders');
       expect(res.text).toContain('data-testid="holder-search"');

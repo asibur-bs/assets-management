@@ -68,6 +68,35 @@
       </svg>
       <span class="nav-label">Holders</span>
     </a>
+    <% if (canWrite) { %>
+    <a class="nav-link" href="/users" data-testid="nav-users" title="Users" <% if (here === '/users' || here.indexOf('/users/') === 0) { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="8" r="2.7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M6.2 18.2c1.2-2.8 3.2-4.2 5.8-4.2s4.6 1.4 5.8 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M18.2 7.2h3.2M19.8 5.6v3.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Users</span>
+    </a>
+    <% } %>
+    <a class="nav-link nav-account" href="/profile" data-testid="nav-profile" title="Profile" <% if (here === '/profile') { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="8" r="2.7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M6.2 18.2c1.2-2.8 3.2-4.2 5.8-4.2s4.6 1.4 5.8 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Profile</span>
+    </a>
+    <% if (principal) { %>
+    <form method="post" action="/sign-out" class="sign-out">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <button type="submit" class="nav-link" data-testid="sign-out" title="Sign out">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M10 6.5V5.2A1.2 1.2 0 0 1 11.2 4h7.1A1.2 1.2 0 0 1 19.5 5.2v13.6a1.2 1.2 0 0 1-1.2 1.2h-7.1a1.2 1.2 0 0 1-1.2-1.2v-1.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M4.5 12h9.2M11 8.6 14.4 12 11 15.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="nav-label">Sign out</span>
+      </button>
+    </form>
+    <% } %>
   </nav>
 </aside>
 <button type="button" class="btn sidebar-toggle" data-sidebar-collapse data-testid="sidebar-collapse" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">
@@ -86,13 +115,9 @@
     <h1<% if (typeof pageTitleTestId !== 'undefined' && pageTitleTestId) { %> data-testid="<%= pageTitleTestId %>"<% } %>><%= titleText %></h1>
   </div>
   <div class="topbar-end">
-    <% if (kind === 'assets') { %>
-      <a class="btn" href="/assets/export<%= exportQuery ? '?' + exportQuery : '' %>" data-testid="export-csv">Export CSV</a>
-    <% } %>
     <% if (kind === 'detail' || kind === 'error') { %>
       <a class="btn" href="/assets" data-testid="back-to-list">Back to list</a>
     <% } %>
-    <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
     <label class="theme-switch">Theme
       <select id="theme-select" data-testid="theme-select">
         <option value="system">System</option>
@@ -104,7 +129,9 @@
         <option value="contrast">High contrast</option>
       </select>
     </label>
-    <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
+    <% if (principal) { %>
+      <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
+    <% } %>
   </div>
 </header>
 <main id="main" class="container">

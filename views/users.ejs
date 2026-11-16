@@ -1,0 +1,33 @@
+<% pageTitle = 'Users'; headerKind = 'users'; %>
+<%- include('_header') %>
+<div class="list-toolbar">
+  <p class="count-line muted">People who can sign in. A holder named on an asset is still only a name.</p>
+  <div class="list-actions">
+    <a class="btn primary" href="/users/new" data-testid="user-new">New user</a>
+  </div>
+</div>
+<div class="table-scroll">
+<table class="asset-table" data-testid="user-table">
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>Display name</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% users.forEach(function (user) { %>
+      <tr data-testid="user-row-<%= user.username %>">
+        <td><%= user.username %></td>
+        <td><%= user.displayName %></td>
+        <td><%= user.role === 'administrator' ? 'Administrator' : 'Reader' %></td>
+        <td><%= user.disabledAt ? 'Disabled' : 'Active' %></td>
+        <td><a href="/users/<%= user.id %>/edit" data-testid="user-edit-<%= user.username %>">Edit</a></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+</div>
+<%- include('_footer') %>

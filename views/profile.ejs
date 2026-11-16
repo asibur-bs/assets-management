@@ -1,0 +1,26 @@
+<% pageTitle = 'Profile'; headerKind = 'profile'; %>
+<%- include('_header') %>
+<section class="panel profile" data-testid="profile">
+  <div class="profile-identity">
+    <span class="profile-mark" aria-hidden="true"><%= initials %></span>
+    <div>
+      <h2 data-testid="profile-name"><%= user.displayName %></h2>
+      <p class="muted" data-testid="profile-username">@<%= user.username %></p>
+    </div>
+  </div>
+  <dl class="details-grid" data-testid="profile-fields">
+    <dt>Username</dt>
+    <dd><%= user.username %></dd>
+    <dt>Display name</dt>
+    <dd><%= user.displayName %></dd>
+    <dt>Role</dt>
+    <dd data-testid="profile-role"><%= user.role === 'administrator' ? 'Administrator' : 'Reader' %></dd>
+    <dt>Status</dt>
+    <dd data-testid="profile-status"><span class="profile-status <%= user.disabledAt ? 'is-disabled' : 'is-active' %>"><%= user.disabledAt ? 'Disabled' : 'Active' %></span></dd>
+    <dt>Created</dt>
+    <dd data-testid="profile-created"><%= showValue(user.createdAt) %></dd>
+    <dt>Updated</dt>
+    <dd data-testid="profile-updated"><%= showValue(user.updatedAt) %></dd>
+  </dl>
+</section>
+<%- include('_footer') %>

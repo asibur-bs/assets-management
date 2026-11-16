@@ -45,11 +45,19 @@
 <% if (filters.holder) { %>
   <p class="count-line" data-testid="active-holder">Holder <%= filters.holder %></p>
 <% } %>
-<% if (matching === 0) { %>
-  <p class="count-line muted" data-testid="count-line">Showing 0 of 0 records</p>
-<% } else { %>
-  <p class="count-line muted" data-testid="count-line">Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= matching %> records</p>
-<% } %>
+<div class="list-toolbar">
+  <% if (matching === 0) { %>
+    <p class="count-line muted" data-testid="count-line">Showing 0 of 0 records</p>
+  <% } else { %>
+    <p class="count-line muted" data-testid="count-line">Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= matching %> records</p>
+  <% } %>
+  <div class="list-actions">
+    <a class="btn" href="/assets/export<%= exportQuery ? '?' + exportQuery : '' %>" data-testid="export-csv">Export CSV</a>
+    <% if (canWrite) { %>
+      <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
+    <% } %>
+  </div>
+</div>
 
 <div class="table-scroll">
 <table class="asset-table" data-testid="asset-table">

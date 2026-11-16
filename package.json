@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
+    "create-admin": "node src/create-admin.js",
     "test": "vitest run",
     "test:db": "vitest run tests/db.test.js",
     "test:repo": "vitest run tests/assets-repo.test.js",

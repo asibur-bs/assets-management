@@ -47,6 +47,11 @@ const MIGRATIONS = [
     name: 'foundation-rebuild',
     up: foundationRebuild,
   },
+  {
+    version: 4,
+    name: 'users-and-sessions',
+    up: usersAndSessions,
+  },
 ];
 
 function sqlString(value) {
@@ -211,9 +216,7 @@ function createIndexesAndTriggers(db) {
   // Built inside the same transaction. A collision is reported with the row
   // identifiers, then the transaction rolls back and the source rows stay.
   throwIfSerialsCollide(db);
-  db.exec(
-    `CREATE UNIQUE INDEX idx_assets_serial_ci ON assets (category, ${SERIAL_OR_KEY_INDEX_EXPRESSION})`
-  );
+  db.exec(`CREATE UNIQUE INDEX idx_assets_serial_ci ON assets (category, ${SERIAL_OR_KEY_INDEX_EXPRESSION})`);
   db.exec(`
     CREATE TRIGGER audit_log_no_update
     BEFORE UPDATE ON audit_log
@@ -226,6 +229,33 @@ function createIndexesAndTriggers(db) {
     BEGIN
       SELECT RAISE(ABORT, 'audit_log is append-only');
     END;
+  `);
+}
+
+function usersAndSessions(db) {
+  db.exec(`
+    CREATE TABLE users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      display_name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('administrator', 'reader')),
+      disabled_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+
+    CREATE TABLE sessions (
+      id_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      csrf_token TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX idx_sessions_user ON sessions(user_id);
+    CREATE INDEX idx_sessions_expires ON sessions(expires_at);
   `);
 }
 

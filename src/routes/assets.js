@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { requireWriter } = require('../auth/guard');
 const repo = require('../repositories/assets-repo');
 const service = require('../services/asset-service');
 const { translate } = require('../domain/translation');
@@ -421,6 +422,12 @@ function presentHolders(result) {
 
 function assetsRouter(db) {
   const router = express.Router();
+
+  router.use((req, res, next) => {
+    const writingPage = req.path === '/new' || req.path.endsWith('/edit') || req.path.endsWith('/serial-check');
+    if ((req.method === 'GET' || req.method === 'HEAD') && !writingPage) return next();
+    return requireWriter(req, res, next);
+  });
 
   function renderDetail(res, loaded, statusCode, extras) {
     res.status(statusCode).render(

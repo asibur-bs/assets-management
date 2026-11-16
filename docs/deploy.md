@@ -44,8 +44,12 @@ Run every command from the repository root.
 
 6. Smoke-test the running process. `SMOKE_BASE_URL` is required. The script registers one asset, assigns it, reads `audit_log` from the same `DB_PATH` the server is using, and exits 0 only when registration, the transition, a non-empty server-written actor, and the audit row count all pass. The actor is the assignee the server wrote into the assign audit description. The script does not add an actor column.
 
+   `SMOKE_USERNAME` and `SMOKE_PASSWORD` are an active administrator. Create that account with `npm run create-admin` when the database has none.
+
    ```bash
-   SMOKE_BASE_URL=http://127.0.0.1:3000 DB_PATH=data/assets.sqlite bash scripts/smoke-deploy.sh
+   SMOKE_BASE_URL=http://127.0.0.1:3000 DB_PATH=data/assets.sqlite \
+     SMOKE_USERNAME=ada SMOKE_PASSWORD='the-administrator-password' \
+     bash scripts/smoke-deploy.sh
    ```
 
 7. Record the deployed commit SHA.

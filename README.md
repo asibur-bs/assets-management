@@ -29,6 +29,7 @@ npm run test:coverage   # fails when project-wide line coverage is below 80%
 - **List** all assets with text search, filter by category/status, sort by name or created date.
 - **View** an asset's full record, current state, and most recent activity.
 - **Transition** an asset through the lifecycle: `in-stock -> assigned -> returned -> lost`.
+- **Sign in** as an administrator or a reader. Administrators change assets and manage users. Readers can look through the inventory. A holder named on an asset is still only a name, not an account.
 
 A newly registered asset is always created in the `in-stock` state. The optional
 assignee is stored on the record as a plain field; it does not move the asset
@@ -61,10 +62,25 @@ its existing rows are preserved.
 |-----|---------|-------------|
 | `PORT` | `3000` | HTTP port |
 | `DB_PATH` | `data/assets.sqlite` | SQLite database file path. Use `:memory:` for ephemeral. |
+| `COOKIE_SECURE` | unset | Set to `1` when the app is served over HTTPS, so the session cookie is marked Secure. |
+| `ASSET_ADMIN_USERNAME` | | Used only by `npm run create-admin` for the first administrator. |
+| `ASSET_ADMIN_DISPLAY_NAME` | | Display name stored for that first administrator. |
+| `ASSET_ADMIN_PASSWORD` | | Password for that first administrator. It is not written to the database in clear text. |
+
+Create the first administrator once, before anyone signs in:
+
+```bash
+ASSET_ADMIN_USERNAME=ada \
+ASSET_ADMIN_DISPLAY_NAME='Ada Lovelace' \
+ASSET_ADMIN_PASSWORD='choose-a-password' \
+npm run create-admin
+```
+
+The command refuses to run again while an active administrator already exists. Sign in at `http://localhost:3000/sign-in`.
 
 ## Why this exists
 
-This `poc` proves the core idea of an internal asset-tracking system end-to-end. It is intentionally minimal: no authentication, no bulk operations, no notifications, no multi-tenant. See `aidlc/spaces/default/intents/261004-poc/` for the traceable requirements and design artifacts.
+This `poc` proves the core idea of an internal asset-tracking system end-to-end. Sign-in is application-managed: accounts and sessions live in the same SQLite file. There is no bulk import, no notifications, and no multi-tenant support. See `aidlc/spaces/default/intents/261004-poc/` for the traceable requirements and design artifacts.
 
 ## Code layout
 
