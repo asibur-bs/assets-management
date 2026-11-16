@@ -4,27 +4,59 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sign in — Asset Tracker</title>
+<script>
+(function () {
+  var allowed = ['system', 'light', 'dark', 'ocean', 'forest', 'sunset', 'contrast'];
+  var stored = 'system';
+  try {
+    var saved = localStorage.getItem('asset-tracker-theme');
+    if (saved && allowed.indexOf(saved) !== -1) stored = saved;
+  } catch (err) {
+    stored = 'system';
+  }
+  document.documentElement.setAttribute('data-theme', stored);
+})();
+</script>
 <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body class="sign-in-body">
-<main class="sign-in-card" id="main">
-  <h1>Asset Tracker</h1>
-  <p class="muted">Sign in to continue.</p>
-  <% if (error) { %>
-    <p class="error" role="alert" data-testid="sign-in-error"><%= error %></p>
-  <% } %>
-  <form method="post" action="/sign-in" class="form" data-testid="sign-in-form">
-    <input type="hidden" name="next" value="<%= next %>" />
-    <label>
-      Username
-      <input type="text" name="username" required autocomplete="username" value="<%= username %>" data-testid="sign-in-username" />
-    </label>
-    <label>
-      Password
-      <input type="password" name="password" required autocomplete="current-password" data-testid="sign-in-password" />
-    </label>
-    <button type="submit" class="btn primary" data-testid="sign-in-submit">Sign in</button>
-  </form>
-</main>
+<div class="sign-in-stage">
+  <aside class="sign-in-banner">
+    <div class="sign-in-banner-head">
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M12 12.2 20 8M12 12.2 4 8M12 12.2V20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <strong>Asset Tracker</strong>
+    </div>
+    <p>Hardware and software licenses.</p>
+    <ul class="sign-in-legend">
+      <li><span class="status status-in-stock">In stock</span></li>
+      <li><span class="status status-assigned">Assigned</span></li>
+      <li><span class="status status-returned">Returned</span></li>
+      <li><span class="status status-lost">Lost</span></li>
+      <li><span class="status status-discarded">Discarded</span></li>
+    </ul>
+  </aside>
+  <main class="sign-in-card" id="main">
+    <h1>Sign in</h1>
+    <p class="muted">Sign in to continue.</p>
+    <% if (error) { %>
+      <p class="error" role="alert" data-testid="sign-in-error"><%= error %></p>
+    <% } %>
+    <form method="post" action="/sign-in" class="form" data-testid="sign-in-form">
+      <input type="hidden" name="next" value="<%= next %>" />
+      <label>
+        Username
+        <input type="text" name="username" required autocomplete="username" value="<%= username %>" data-testid="sign-in-username" />
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required autocomplete="current-password" data-testid="sign-in-password" />
+      </label>
+      <button type="submit" class="btn primary" data-testid="sign-in-submit">Sign in</button>
+    </form>
+  </main>
+</div>
 </body>
 </html>
