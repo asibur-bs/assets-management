@@ -13,6 +13,7 @@ const {
   UNASSIGNED_DESIGNATION,
   acceptableReasonsFor,
   findTransition,
+  deriveDisplayHolder,
   holderDimensionMatches,
   sanitizeAssetFilter,
   statusLabel,
@@ -237,6 +238,12 @@ function exportQuery(filters) {
   return pairs.join('&');
 }
 
+function holderHref(search, page) {
+  const pairs = [];
+  if (search) pairs.push(`holder_search=${encodeURIComponent(search)}`);
+  if (page > 1) pairs.push(`page=${page}`);
+  return pairs.length ? `/holders?${pairs.join('&')}` : '/holders';
+}
 
 function listHref(filters, page) {
   const pairs = [];
@@ -364,6 +371,76 @@ function stringField(row, keys) {
   }
   return '';
 }
+
+function holderBreakdowns(db) {
+  const groups = db
+    .prepare(
+      `SELECT
+         CASE
+           WHEN assigned_to IS NOT NULL AND assigned_to <> '' THEN assigned_to
+           WHEN last_assigned_to IS NOT NULL AND last_assigned_to <> '' THEN last_assigned_to
+           ELSE NULL
+         END AS holder_key,
+         CASE
+           WHEN (assigned_to IS NULL OR assigned_to = '')
+            AND (last_assigned_to IS NULL OR last_assigned_to = '')
+           THEN 1 ELSE 0
+         END AS never_held,
+         status,
+         COUNT(*) AS n,
+         CASE
+           WHEN assigned_person_id IS NOT NULL AND assigned_person_id <> '' THEN assigned_person_id
+           ELSE last_assigned_person_id
+         END AS person_id
+       FROM assets
+       GROUP BY 1, 2, 3, 5`
+    )
+    .all();
+
+  const people = listPeople(db, '');
+  const byId = new Map(people.map((person) => [person.id, person]));
+  const byName = new Map();
+  for (const person of people) {
+    const matches = byName.get(person.name) || [];
+    matches.push(person);
+    byName.set(person.name, matches);
+  }
+
+  const buckets = new Map();
+  for (const group of groups) {
+    const derived =
+      group.never_held === 1 ? deriveDisplayHolder(null, null) : deriveDisplayHolder(group.holder_key, null);
+    const key = `${derived.neverHeld ? 1 : 0}\0${derived.displayHolder}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = {
+        displayHolder: derived.displayHolder,
+        neverHeld: derived.neverHeld === true,
+        statuses: Object.fromEntries(STATUS_VALUES.map((status) => [status, 0])),
+        personIds: new Set(),
+      };
+      buckets.set(key, bucket);
+    }
+    if (STATUS_VALUES.includes(group.status)) bucket.statuses[group.status] += Number(group.n);
+    if (group.person_id) bucket.personIds.add(group.person_id);
+  }
+
+  return [...buckets.values()]
+    .sort((a, b) => {
+      if (a.displayHolder < b.displayHolder) return -1;
+      if (a.displayHolder > b.displayHolder) return 1;
+      if (a.neverHeld === b.neverHeld) return 0;
+      return a.neverHeld ? 1 : -1;
+    })
+    .map((bucket) => {
+      const linked = [...bucket.personIds].map((id) => byId.get(id)).filter(Boolean);
+      const matches = linked.length ? linked : byName.get(bucket.displayHolder) || [];
+      const emails = [...new Set(matches.map((person) => person.email).filter(Boolean))];
+      const notes = [...new Set(matches.map((person) => person.note).filter(Boolean))];
+      return { statuses: bucket.statuses, email: emails.join(', '), note: notes.join(', ') };
+    });
+}
+
 
 function presentHolders(result) {
   const source = Array.isArray(result) ? { holders: result } : result || {};
@@ -744,8 +821,24 @@ function mountAuxiliaryRoutes(app, db) {
     try {
       const { listHolders } = require('../reporting/query');
       const search = queryString(req.query.holder_search);
-      const presented = presentHolders(listHolders(db, search.length > 0 ? search : null));
-      res.render('holders', { search, rows: presented.rows, holderCount: presented.holderCount });
+      const presented = presentHolders(listHolders(db, null));
+      const details = holderBreakdowns(db);
+      presented.rows.forEach((row, index) => {
+        const detail = details[index] || { statuses: {}, email: '', note: '' };
+        row.email = detail.email;
+        row.note = detail.note;
+        row.statuses = detail.statuses;
+      });
+      const needle = search.trim().toLowerCase();
+      const matched = needle
+        ? presented.rows.filter((row) =>
+            [row.name, row.email, row.note].join('\n').toLowerCase().includes(needle)
+          )
+        : presented.rows;
+      const statusColumns = STATUS_VALUES.map((status) => ({ status, label: statusLabel(status) }));
+      const pagination = paginateRows(matched, req.query.page, (page) => holderHref(search, page));
+      pagination.label = 'Holder pages';
+      res.render('holders', { search, rows: pagination.rows, pagination, statusColumns });
     } catch (err) {
       next(err);
     }

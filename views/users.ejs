@@ -1,11 +1,12 @@
-<% pageTitle = 'Users'; headerKind = 'users'; %>
+<% pageTitle = 'Users'; headerKind = 'users'; listPage = true; %>
 <%- include('_header') %>
 <div class="list-toolbar">
-  <p class="count-line muted">People who can sign in. A holder named on an asset is still only a name.</p>
+  <p class="count-line muted" data-testid="user-count"><% if (pagination.matching === 0) { %>Showing 0 of 0 users<% } else { %>Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= pagination.matching %> users<% } %></p>
   <div class="list-actions">
     <a class="btn primary" href="/users/new" data-testid="user-new">New user</a>
   </div>
 </div>
+<p class="muted list-note">People who can sign in. Assets are assigned from the People directory.</p>
 <div class="table-scroll">
 <table class="asset-table" data-testid="user-table">
   <thead>
@@ -30,4 +31,5 @@
   </tbody>
 </table>
 </div>
+<%- include('_pagination') %>
 <%- include('_footer') %>

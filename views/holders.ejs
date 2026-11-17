@@ -1,37 +1,77 @@
-<% pageTitle = 'Holders'; headerKind = 'holders'; %>
+<% pageTitle = 'Holders'; headerKind = 'holders'; listPage = true; %>
 <%- include('_header') %>
-<form method="get" action="/holders" class="filters" data-testid="holder-search-form">
-  <label class="field">Search holders
-    <input type="search" name="holder_search" value="<%= search %>" data-testid="holder-search" />
-  </label>
-  <button type="submit" class="btn" data-testid="holder-search-apply">Search</button>
-</form>
-<div class="holder-meta">
-  <p class="count-line" data-testid="holder-count">Showing <%= holderCount %> holders</p>
-  <p class="muted" data-testid="holder-count-qualifier">distinct display holders, excluding Unassigned</p>
+<div class="holder-head">
+  <div class="holder-meta">
+    <p class="count-line" data-testid="holder-count"><% if (pagination.matching === 0) { %>Showing 0 holders<% } else { %>Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= pagination.matching %><% } %></p>
+    <p class="muted" data-testid="holder-count-qualifier">distinct display holders, excluding Unassigned</p>
+  </div>
+  <form method="get" action="/holders" class="holder-search" data-testid="holder-search-form">
+    <span class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input type="search" name="holder_search" value="<%= search %>" placeholder="Search holders" aria-label="Search holders" data-testid="holder-search" autocomplete="off" />
+    </span>
+  </form>
 </div>
 <% if (!rows.length) { %>
   <p class="empty-note muted" data-testid="holder-empty">No holders match.</p>
 <% } else { %>
-  <div class="holder-list">
-  <% rows.forEach(function (row) { %>
-    <section class="holder-row" data-testid="holder-row">
-      <div class="holder-identity">
-        <a class="holder-name" href="<%= row.href %>" data-testid="holder-link"><%= row.name %></a>
-        <% if (row.neverHeld && row.name !== 'Unassigned') { %>
-          <p class="holder-marker muted" data-testid="holder-marker">Unassigned</p>
-        <% } %>
-      </div>
-      <p class="holder-total" data-testid="holder-total"><%= row.total %></p>
-      <% if (row.chips.length) { %>
-        <div class="holder-chips">
-          <% row.chips.forEach(function (chip) { %>
-            <span class="status status-<%= chip.status %>" data-testid="holder-chip-<%= chip.status %>"><%= chip.label %> <%= chip.count %></span>
+  <div class="table-scroll">
+    <table class="asset-table people-table holder-table" data-testid="holder-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Note</th>
+          <% statusColumns.forEach(function (column) { %>
+            <th class="num"><%= column.label %></th>
           <% }); %>
-        </div>
-      <% } %>
-    </section>
-  <% }); %>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+      <% rows.forEach(function (row) { %>
+        <tr class="holder-row" data-testid="holder-row" data-holder-name="<%= row.name %>" data-never-held="<%= row.neverHeld ? '1' : '0' %>">
+          <td>
+            <a class="holder-name" href="<%= row.href %>" data-testid="holder-link"><%= row.name %></a>
+            <% if (row.neverHeld && row.name !== 'Unassigned') { %>
+              <p class="holder-marker muted" data-testid="holder-marker">Unassigned</p>
+            <% } %>
+          </td>
+          <td data-testid="holder-email"><%= row.email || '--' %></td>
+          <td><%= row.note || '--' %></td>
+          <% statusColumns.forEach(function (column) { %>
+            <% var count = row.statuses && row.statuses[column.status] ? row.statuses[column.status] : 0; %>
+            <td class="num<%= count ? '' : ' is-zero' %>" data-testid="holder-status-<%= column.status %>"><%= count %></td>
+          <% }); %>
+          <td class="num holder-total"><span data-testid="holder-total"><%= row.total %></span></td>
+        </tr>
+      <% }); %>
+      </tbody>
+    </table>
   </div>
+  <%- include('_pagination') %>
 <% } %>
+<script>
+(function () {
+  var input = document.querySelector('[data-testid="holder-search"]');
+  if (!input) return;
+  if (input.value) {
+    input.focus();
+    var end = input.value.length;
+    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(end, end);
+  }
+  var timer = null;
+  input.addEventListener('input', function () {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(function () {
+      var url = new URL('/holders', window.location.origin);
+      if (input.value.trim()) url.searchParams.set('holder_search', input.value);
+      window.location.assign(url.pathname + url.search);
+    }, 200);
+  });
+})();
+</script>
 <%- include('_footer') %>

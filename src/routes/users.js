@@ -1,6 +1,7 @@
 'use strict';
 
 const { ROLES, createUser, getUser, listUsers, updateUser } = require('../auth/users');
+const { paginateRows } = require('../pagination');
 
 function queryString(value) {
   if (Array.isArray(value)) return queryString(value[0]);
@@ -70,7 +71,11 @@ function mountUserRoutes(app, db) {
   }
 
   app.get('/users', requireAdministrator, (req, res) => {
-    res.render('users', { users: listUsers(db) });
+    const pagination = paginateRows(listUsers(db), req.query.page, (page) =>
+      page > 1 ? `/users?page=${page}` : '/users'
+    );
+    pagination.label = 'User pages';
+    res.render('users', { users: pagination.rows, pagination });
   });
 
   app.get('/users/new', requireAdministrator, (req, res) => {
