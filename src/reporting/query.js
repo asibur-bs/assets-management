@@ -187,8 +187,52 @@ function listHolders(db, holderSearch) {
   return rows.map(({ displayHolder, count }) => ({ displayHolder, count }));
 }
 
+function countByCategory(db) {
+  const rows = db.prepare(`SELECT category, COUNT(*) AS n FROM assets GROUP BY category`).all();
+  const counts = { hardware: 0, 'software-license': 0 };
+  for (const row of rows) {
+    if (Object.prototype.hasOwnProperty.call(counts, row.category)) counts[row.category] = Number(row.n);
+  }
+  return [
+    { value: 'hardware', label: 'Hardware', count: counts.hardware },
+    { value: 'software-license', label: 'Software license', count: counts['software-license'] },
+  ];
+}
+
+function assignedHolders(db, limit) {
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : 6;
+  return db
+    .prepare(
+      `SELECT assigned_to AS name, COUNT(*) AS count
+       FROM assets
+       WHERE status = 'assigned' AND assigned_to IS NOT NULL AND assigned_to <> ''
+       GROUP BY assigned_to
+       ORDER BY count DESC, assigned_to ASC
+       LIMIT ?`
+    )
+    .all(cap)
+    .map((row) => ({ name: row.name, count: Number(row.count) }));
+}
+
+function recentChanges(db, limit) {
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : 6;
+  return db
+    .prepare(
+      `SELECT audit_log.asset_id AS assetId, audit_log.description, audit_log.created_at AS createdAt,
+              audit_log.actor, assets.name AS assetName
+       FROM audit_log
+       JOIN assets ON assets.id = audit_log.asset_id
+       ORDER BY audit_log.id DESC
+       LIMIT ?`
+    )
+    .all(cap);
+}
+
 module.exports = {
   queryAssets,
   countFigures,
   listHolders,
+  countByCategory,
+  assignedHolders,
+  recentChanges,
 };

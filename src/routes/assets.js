@@ -688,13 +688,53 @@ function assetsRouter(db) {
   return router;
 }
 
+function shortWhen(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hour = String(date.getUTCHours()).padStart(2, '0');
+  const minute = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${day} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${hour}:${minute}`;
+}
+
+function briefChange(description) {
+  let text = String(description || '').replace(/"[^"]+"/, '').replace(/\s{2,}/g, ' ').trim();
+  text = text.replace(/^Registered in category ([a-z-]+) with serial-or-key/i, (_, category) => {
+    const label = category === 'software-license' ? 'software license' : category.replace(/-/g, ' ');
+    return `Registered as ${label}, key`;
+  });
+  return text.replace(/\.$/, '');
+}
 
 function mountAuxiliaryRoutes(app, db) {
   app.get('/dashboard', (req, res, next) => {
     try {
-      const { countFigures } = require('../reporting/query');
+      const { assignedHolders, countByCategory, countFigures, recentChanges } = require('../reporting/query');
       const figures = presentFigures(countFigures(db, {}));
-      res.render('dashboard', { figures, tiles: tilesFrom(figures) });
+      const total = figures.total_record_count;
+      const share = (count) => (total ? Math.round((Number(count) * 100) / total) : 0);
+      const tiles = tilesFrom(figures).map((tile) => ({ ...tile, share: share(tile.count) }));
+      const categories = countByCategory(db).map((row) => ({
+        ...row,
+        href: `/assets?category=${encodeURIComponent(row.value)}`,
+        share: share(row.count),
+      }));
+      const holders = assignedHolders(db, 6).map((row) => ({
+        ...row,
+        href: `/assets?holder=${encodeURIComponent(row.name)}`,
+      }));
+      res.render('dashboard', {
+        figures,
+        tiles,
+        categories,
+        holders,
+        changes: recentChanges(db, 6).map((row) => ({
+          ...row,
+          when: shortWhen(row.createdAt),
+          summary: briefChange(row.description),
+        })),
+      });
     } catch (err) {
       next(err);
     }

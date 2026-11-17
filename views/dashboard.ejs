@@ -1,15 +1,19 @@
 <% pageTitle = 'Reconciliation'; headerKind = 'dashboard'; %>
 <%- include('_header') %>
-<section class="headline" data-testid="headline">
+<section class="headline dash-figures" data-testid="headline">
   <article class="stat-card">
     <a href="/assets" data-testid="figure-active-inventory">
       <span class="stat-kicker">Active Inventory</span>
       <span class="stat-value"><%= figures.active_inventory_count %></span>
     </a>
-    <a class="stat-sub" href="/assets?status=in-stock" data-testid="figure-available">
+    <p class="stat-note">In stock, assigned, returned, and lost. Discarded records are kept out of this count.</p>
+  </article>
+  <article class="stat-card">
+    <a href="/assets?status=in-stock" data-testid="figure-available">
       <span class="stat-kicker">available to assign</span>
       <span class="stat-value"><%= figures.available_to_assign_count %></span>
     </a>
+    <p class="stat-note">In stock and not held by anyone.</p>
   </article>
   <article class="stat-card">
     <a href="/assets" data-testid="figure-total">
@@ -20,18 +24,81 @@
   </article>
 </section>
 <h2 class="section-heading">Status</h2>
+<% if (figures.total_record_count) { %>
+  <div class="mix" data-testid="status-mix">
+    <% tiles.forEach(function (tile) { %>
+      <% if (tile.count) { %>
+        <span class="status status-<%= tile.status %>" style="flex: <%= tile.count %> <%= tile.count %> 0" title="<%= tile.label %> <%= tile.count %>"></span>
+      <% } %>
+    <% }); %>
+  </div>
+<% } %>
 <section class="status-tiles" data-testid="status-tiles">
   <% tiles.forEach(function (tile) { %>
     <a class="status status-<%= tile.status %> tile" href="<%= tile.href %>" data-testid="tile-<%= tile.status %>">
       <span class="sr-only"><%= tile.label %> <%= tile.count %></span>
       <span class="tile-label" aria-hidden="true"><%= tile.label %></span>
       <span class="tile-count" aria-hidden="true"><%= tile.count %></span>
+      <span class="tile-share" aria-hidden="true"><%= tile.share %>%</span>
     </a>
   <% }); %>
 </section>
-<section class="attention" data-testid="attention">
+<div class="dash-split">
+  <section class="panel" data-testid="category-panel">
+    <h2>Category</h2>
+    <ul class="dash-rows">
+      <% categories.forEach(function (row) { %>
+        <li class="dash-category">
+          <a href="<%= row.href %>"><%= row.label %></a>
+          <span class="dash-count"><%= row.count %></span>
+          <span class="dash-meter" aria-hidden="true"><span class="dash-meter-fill" style="width: <%= row.share %>%"></span></span>
+        </li>
+      <% }); %>
+    </ul>
+  </section>
+  <section class="panel" data-testid="holder-panel">
+    <h2>Currently assigned</h2>
+    <% if (!holders.length) { %>
+      <p class="muted">No assets are assigned.</p>
+    <% } else { %>
+      <ul class="dash-rows">
+        <% holders.forEach(function (row) { %>
+          <li>
+            <a href="<%= row.href %>"><%= row.name %></a>
+            <span class="dash-count"><%= row.count %></span>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+<section class="panel attention" data-testid="attention">
   <h2>Attention</h2>
-  <a class="attention-item" href="/assets?status=lost" data-testid="attention-lost"><%= figures.lost_count %> asset(s) marked lost — no recovery recorded</a>
-  <a class="attention-item" href="/assets?status=discarded" data-testid="attention-discarded"><%= figures.discarded_count %> asset(s) discarded</a>
+  <ul class="attention-list">
+    <li>
+      <a href="/assets?status=lost" data-testid="attention-lost"><%= figures.lost_count %> asset(s) marked lost — no recovery recorded</a>
+    </li>
+    <li>
+      <a href="/assets?status=discarded" data-testid="attention-discarded"><%= figures.discarded_count %> asset(s) discarded</a>
+    </li>
+  </ul>
+</section>
+<section class="panel dash-recent" data-testid="recent-changes">
+  <h2>Recent changes</h2>
+  <% if (!changes.length) { %>
+    <p class="muted">No changes recorded yet.</p>
+  <% } else { %>
+    <ol class="change-list">
+      <% changes.forEach(function (change) { %>
+        <li>
+          <div class="change-top">
+            <a href="/assets/<%= change.assetId %>"><%= change.assetName %></a>
+            <time><%= change.when %></time>
+          </div>
+          <p><%= change.summary %><% if (change.actor) { %> · <%= change.actor %><% } %></p>
+        </li>
+      <% }); %>
+    </ol>
+  <% } %>
 </section>
 <%- include('_footer') %>
