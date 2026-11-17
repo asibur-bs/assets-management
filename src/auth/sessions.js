@@ -89,10 +89,12 @@ function readCookie(req, name) {
   return '';
 }
 
+const HOME_PATH = '/dashboard';
+
 function safeNext(value) {
-  if (typeof value !== 'string') return '/assets';
-  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/assets';
-  if (value.includes('://') || value.includes('\\')) return '/assets';
+  if (typeof value !== 'string') return HOME_PATH;
+  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return HOME_PATH;
+  if (value.includes('://') || value.includes('\\')) return HOME_PATH;
   return value;
 }
 
@@ -103,6 +105,7 @@ module.exports = {
   deleteSession,
   readCookie,
   readSession,
+  HOME_PATH,
   safeNext,
   tokensMatch,
 };

@@ -50,10 +50,10 @@ describe('asset routes (integration)', () => {
     else process.env.ASSET_ACTOR = previousActor;
   });
 
-  it('GET / redirects to /assets', async () => {
+  it('GET / redirects to /dashboard', async () => {
     const res = await client.get('/');
     expect(res.status).toBe(302);
-    expect(res.headers.location).toBe('/assets');
+    expect(res.headers.location).toBe('/dashboard');
   });
 
   it('disables x-powered-by and sets nosniff on every response', async () => {

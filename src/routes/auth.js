@@ -3,14 +3,14 @@
 const { DUMMY_HASH, verifyPassword } = require('../auth/passwords');
 const { noteFailure, noteSuccess, tooManyAttempts } = require('../auth/throttle');
 const { getUserByUsername } = require('../auth/users');
-const { COOKIE_NAME, cookieOptions, createSession, deleteSession, readCookie, safeNext } = require('../auth/sessions');
+const { COOKIE_NAME, HOME_PATH, cookieOptions, createSession, deleteSession, readCookie, safeNext } = require('../auth/sessions');
 
 const SIGN_IN_FAILURE = 'The username or password is not valid.';
 
 function signInPage(res, status, fields) {
   res.status(status).render('sign-in', {
     username: fields.username || '',
-    next: fields.next || '/assets',
+    next: fields.next || HOME_PATH,
     error: fields.error || '',
   });
 }
@@ -21,13 +21,13 @@ function mountAuthRoutes(app, db) {
       res.redirect(safeNext(req.query.next));
       return;
     }
-    signInPage(res, 200, { next: safeNext(typeof req.query.next === 'string' ? req.query.next : '/assets') });
+    signInPage(res, 200, { next: safeNext(typeof req.query.next === 'string' ? req.query.next : HOME_PATH) });
   });
 
   app.post('/sign-in', (req, res) => {
     const username = typeof req.body.username === 'string' ? req.body.username : '';
     const password = typeof req.body.password === 'string' ? req.body.password : '';
-    const next = safeNext(typeof req.body.next === 'string' ? req.body.next : '/assets');
+    const next = safeNext(typeof req.body.next === 'string' ? req.body.next : HOME_PATH);
     if (tooManyAttempts(username)) {
       signInPage(res, 401, { username, next, error: SIGN_IN_FAILURE });
       return;

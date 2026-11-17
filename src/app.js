@@ -60,7 +60,7 @@ function createApp(db) {
   app.use(requireCsrf);
   app.post('/sign-out', signOut(db));
 
-  app.get('/', (req, res) => res.redirect('/assets'));
+  app.get('/', (req, res) => res.redirect('/dashboard'));
   mountUserRoutes(app, db);
   assetsRouter.mountAuxiliaryRoutes(app, db);
   app.use('/assets', assetsRouter(db));

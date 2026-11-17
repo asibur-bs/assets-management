@@ -67,7 +67,7 @@ describe('sign-in, roles, and users', () => {
 
     const signedIn = await agent.post('/sign-in').type('form').send({ username: 'ada', password: 'password-1' });
     expect(signedIn.status).toBe(303);
-    expect(signedIn.headers.location).toBe('/assets');
+    expect(signedIn.headers.location).toBe('/dashboard');
     expect(signedIn.headers['set-cookie'].join(';')).toMatch(/HttpOnly/i);
     expect(signedIn.headers['set-cookie'].join(';')).toMatch(/SameSite=Lax/i);
 

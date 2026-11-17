@@ -29,7 +29,7 @@ function attachPrincipal(db) {
 function requireUser(req, res, next) {
   if (req.principal) return next();
   if (req.method === 'GET' || req.method === 'HEAD') {
-    const nextPath = encodeURIComponent(req.originalUrl || '/assets');
+    const nextPath = encodeURIComponent(req.originalUrl || '/dashboard');
     res.redirect(`/sign-in?next=${nextPath}`);
     return;
   }
