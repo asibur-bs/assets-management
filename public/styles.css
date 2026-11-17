@@ -234,6 +234,7 @@ body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, san
 .topbar-start h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar-end { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; flex-wrap: nowrap; gap: 0.4rem 0.5rem; }
 .btn.nav-toggle, .backdrop { display: none; }
+.btn.nav-toggle { width: var(--control-h); padding: 0; }
 .actor { margin: 0; color: var(--muted); font-size: var(--control-font); line-height: 1; white-space: nowrap; }
 .sidebar .sign-out { width: 100%; margin: 0; }
 button.nav-link { width: 100%; border: 0; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
@@ -768,7 +769,7 @@ dialog::backdrop { background: var(--overlay); }
     background: var(--overlay);
   }
   body.sidebar-open .backdrop { display: block; }
-  .btn.nav-toggle { display: inline-block; }
+  .btn.nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
   .sidebar-toggle { display: none; }
   .detail-layout { grid-template-columns: 1fr; }
   .container { padding: 1rem; }
