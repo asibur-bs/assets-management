@@ -1,9 +1,12 @@
 <% pageTitle = 'Assets'; headerKind = 'assets'; %>
 <%- include('_header') %>
+<dialog id="asset-filters" class="filter-dialog" aria-labelledby="filter-dialog-title">
 <form method="get" action="/assets" class="filters asset-filters" data-testid="filters">
-  <label class="field">Search
-    <input type="search" name="search_text" placeholder="Search name or serial" value="<%= filters.search_text %>" data-testid="filter-search-text" />
-  </label>
+  <div class="dialog-head filter-dialog-head">
+    <h2 id="filter-dialog-title">Filters</h2>
+    <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+  </div>
+  <input type="hidden" name="search_text" value="<%= filters.search_text %>" data-asset-search-value />
   <label class="field">Category
     <select name="category" data-testid="filter-category">
       <option value="">All categories</option>
@@ -42,6 +45,7 @@
     <a class="btn" href="/assets" data-testid="filter-reset">Reset</a>
   </div>
 </form>
+</dialog>
 <% if (filters.holder) { %>
   <p class="count-line" data-testid="active-holder">Holder <%= filters.holder %></p>
 <% } %>
@@ -52,6 +56,25 @@
     <p class="count-line muted" data-testid="count-line">Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= matching %> records</p>
   <% } %>
   <div class="list-actions">
+    <form method="get" action="/assets" class="holder-search" data-testid="asset-search-form">
+      <span class="search-field">
+        <svg class="search-field-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input type="search" name="search_text" value="<%= filters.search_text %>" placeholder="Search name or serial" aria-label="Search assets" data-testid="filter-search-text" autocomplete="off" />
+      </span>
+      <% if (filters.category) { %><input type="hidden" name="category" value="<%= filters.category %>" /><% } %>
+      <% if (filters.status) { %><input type="hidden" name="status" value="<%= filters.status %>" /><% } %>
+      <% if (filters.sort_column && filters.sort_column !== 'name') { %><input type="hidden" name="sort_column" value="<%= filters.sort_column %>" /><% } %>
+      <% if (filters.sort_direction && filters.sort_direction !== 'asc') { %><input type="hidden" name="sort_direction" value="<%= filters.sort_direction %>" /><% } %>
+      <% if (filters.holder) { %><input type="hidden" name="holder" value="<%= filters.holder %>" /><% } %>
+    </form>
+    <button type="button" class="btn filter-toggle<%= (filters.search_text || filters.category || filters.status || filters.holder) ? ' is-active' : '' %>" data-open-dialog="asset-filters" data-testid="filter-toggle" aria-haspopup="dialog" aria-label="Filters">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 5.5h16l-6 7.1V19l-4-2v-4.4l-6-7.1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <a class="btn" href="/assets/export<%= exportQuery ? '?' + exportQuery : '' %>" data-testid="export-csv">Export CSV</a>
     <% if (canWrite) { %>
       <a class="btn primary" data-testid="nav-new" href="/assets/new">New asset</a>
@@ -89,31 +112,35 @@
   </tbody>
 </table>
 </div>
-<% if (pagination.pageCount > 1) { %>
-<nav class="pagination" aria-label="Asset pages" data-testid="pagination">
-  <% if (pagination.prevHref) { %>
-    <a class="btn" href="<%= pagination.prevHref %>" data-testid="page-prev" rel="prev">Previous</a>
-  <% } else { %>
-    <span class="btn is-disabled" aria-disabled="true" data-testid="page-prev">Previous</span>
-  <% } %>
-  <% pagination.pages.forEach(function (item) { %>
-    <% if (item.ellipsis) { %>
-      <span class="ellipsis" aria-hidden="true">…</span>
-    <% } else { %>
-      <a class="btn<%= item.current ? ' current' : '' %>" href="<%= item.href %>" data-testid="page-<%= item.page %>"<% if (item.current) { %> aria-current="page"<% } %>><%= item.page %></a>
-    <% } %>
-  <% }); %>
-  <% if (pagination.nextHref) { %>
-    <a class="btn" href="<%= pagination.nextHref %>" data-testid="page-next" rel="next">Next</a>
-  <% } else { %>
-    <span class="btn is-disabled" aria-disabled="true" data-testid="page-next">Next</span>
-  <% } %>
-  <span class="page-status" data-testid="page-status">Page <%= pagination.page %> of <%= pagination.pageCount %></span>
-</nav>
-<% } %>
+<%- include('_pagination') %>
 <p class="legend" data-testid="status-legend">Legend:
   <% statuses.forEach(function (status) { %>
     <span class="status status-<%= status %>"><%= statusLabel(status) %></span>
   <% }); %>
 </p>
+<script>
+(function () {
+  var input = document.querySelector('[data-testid="filter-search-text"]');
+  if (!input) return;
+  var mirror = document.querySelector('[data-asset-search-value]');
+  if (input.value) {
+    input.focus();
+    var end = input.value.length;
+    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(end, end);
+  }
+  var timer = null;
+  input.addEventListener('input', function () {
+    if (mirror) mirror.value = input.value;
+    window.clearTimeout(timer);
+    timer = window.setTimeout(function () {
+      var url = new URL(window.location.href);
+      if (input.value.trim()) url.searchParams.set('search_text', input.value);
+      else url.searchParams.delete('search_text');
+      url.searchParams.delete('page');
+      var next = url.pathname + url.search;
+      if (next !== window.location.pathname + window.location.search) window.location.assign(next);
+    }, 200);
+  });
+})();
+</script>
 <%- include('_footer') %>
