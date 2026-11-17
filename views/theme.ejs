@@ -1,0 +1,58 @@
+<% pageTitle = 'Theme'; headerKind = 'theme'; %>
+<%- include('_header') %>
+<section class="panel theme-page" data-testid="theme-page">
+  <h2>Appearance</h2>
+  <p class="muted">Choose a theme. It is saved in this browser.</p>
+  <div class="theme-choices">
+    <% [
+      ['system', 'System'],
+      ['light', 'Light'],
+      ['dark', 'Dark'],
+      ['ocean', 'Ocean'],
+      ['forest', 'Forest'],
+      ['sunset', 'Sunset'],
+      ['contrast', 'High contrast']
+    ].forEach(function (theme) { %>
+      <button type="button" class="theme-choice" data-theme-choice="<%= theme[0] %>" data-testid="theme-<%= theme[0] %>" aria-pressed="false">
+        <span class="theme-preview" data-theme="<%= theme[0] %>">
+          <span class="theme-preview-bar"></span>
+          <span class="theme-preview-line"></span>
+          <span class="theme-preview-line short"></span>
+          <span class="theme-preview-chip">Aa</span>
+        </span>
+        <span class="theme-choice-name"><%= theme[1] %></span>
+        <span class="theme-choice-state">In use</span>
+      </button>
+    <% }); %>
+  </div>
+</section>
+<script>
+(function () {
+  var choices = document.querySelectorAll('[data-theme-choice]');
+  if (!choices.length) return;
+  var allowed = ['system', 'light', 'dark', 'ocean', 'forest', 'sunset', 'contrast'];
+  function current() {
+    var value = document.documentElement.getAttribute('data-theme') || 'system';
+    return allowed.indexOf(value) === -1 ? 'system' : value;
+  }
+  function paint(value) {
+    choices.forEach(function (choice) {
+      choice.setAttribute('aria-pressed', choice.getAttribute('data-theme-choice') === value ? 'true' : 'false');
+    });
+  }
+  paint(current());
+  choices.forEach(function (choice) {
+    choice.addEventListener('click', function () {
+      var value = choice.getAttribute('data-theme-choice');
+      document.documentElement.setAttribute('data-theme', value);
+      try {
+        localStorage.setItem('asset-tracker-theme', value);
+      } catch (err) {
+        /* the choice still applies for this page */
+      }
+      paint(value);
+    });
+  });
+})();
+</script>
+<%- include('_footer') %>

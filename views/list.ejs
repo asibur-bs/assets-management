@@ -66,8 +66,8 @@
       </span>
       <% if (filters.category) { %><input type="hidden" name="category" value="<%= filters.category %>" /><% } %>
       <% if (filters.status) { %><input type="hidden" name="status" value="<%= filters.status %>" /><% } %>
-      <% if (filters.sort_column && filters.sort_column !== 'name') { %><input type="hidden" name="sort_column" value="<%= filters.sort_column %>" /><% } %>
-      <% if (filters.sort_direction && filters.sort_direction !== 'asc') { %><input type="hidden" name="sort_direction" value="<%= filters.sort_direction %>" /><% } %>
+      <% if (filters.sort_column && filters.sort_column !== 'created_at') { %><input type="hidden" name="sort_column" value="<%= filters.sort_column %>" /><% } %>
+      <% if (filters.sort_direction && filters.sort_direction !== 'desc') { %><input type="hidden" name="sort_direction" value="<%= filters.sort_direction %>" /><% } %>
       <% if (filters.holder) { %><input type="hidden" name="holder" value="<%= filters.holder %>" /><% } %>
     </form>
     <button type="button" class="btn filter-toggle<%= (filters.search_text || filters.category || filters.status || filters.holder) ? ' is-active' : '' %>" data-open-dialog="asset-filters" data-testid="filter-toggle" aria-haspopup="dialog" aria-label="Filters">

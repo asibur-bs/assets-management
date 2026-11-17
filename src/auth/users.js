@@ -76,7 +76,7 @@ function getUserByUsername(db, username) {
 }
 
 function listUsers(db) {
-  return db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM users ORDER BY username`).all();
+  return db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM users ORDER BY created_at DESC, username COLLATE NOCASE`).all();
 }
 
 function countActiveAdministrators(db) {

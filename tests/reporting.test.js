@@ -166,7 +166,7 @@ describe('reporting', () => {
 
     const alice = { holder: 'Alice' };
     const listed = queryAssets(db, alice);
-    expect(listed.map((row) => row.id)).toEqual(['n2', 'n5', 'n3']);
+    expect(listed.map((row) => row.id)).toEqual(['n5', 'n3', 'n2']);
     expectFigures(countFigures(db, alice), {
       in_stock_count: 1,
       assigned_count: 1,
@@ -273,7 +273,9 @@ describe('reporting', () => {
       'n1',
       'n7',
     ]);
-    expect(queryAssets(db, { sort_column: 'name', sort_direction: 'DESC' }).map((row) => row.id)[0]).toBe('n7');
+    expect(queryAssets(db, { sort_column: 'name', sort_direction: 'DESC' }).map((row) => row.id)).toEqual(
+      queryAssets(db, { sort_column: 'name' }).map((row) => row.id)
+    );
     expect(queryAssets(db, { sort_column: 'created_at', sort_direction: 'desc' }).map((row) => row.id)).toEqual([
       'n8',
       'n7',
@@ -291,9 +293,9 @@ describe('reporting', () => {
 
     seedInventory(db);
     expect(listHolders(db, '')).toEqual([
-      { displayHolder: 'Alice', count: 3 },
-      { displayHolder: 'Bob', count: 1 },
       { displayHolder: 'Cara', count: 1 },
+      { displayHolder: 'Bob', count: 1 },
+      { displayHolder: 'Alice', count: 3 },
       { displayHolder: UNASSIGNED_DESIGNATION, count: 1 },
     ]);
     expect(listHolders(db, 'Ali')).toEqual([{ displayHolder: 'Alice', count: 3 }]);

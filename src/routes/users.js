@@ -64,6 +64,10 @@ function mountUserRoutes(app, db) {
     res.render('profile', { user, initials: profileInitials(user.displayName) });
   });
 
+  app.get('/theme', (req, res) => {
+    res.render('theme');
+  });
+
   function requireAdministrator(req, res, next) {
     if (req.principal && req.principal.role === 'administrator') return next();
     const err = new Error('You do not have permission to manage users.');

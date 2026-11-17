@@ -47,7 +47,7 @@ function optionalAssignee(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function listAssets(db, { q = null, category = null, status = null, sort = 'name', dir = 'asc' } = {}) {
+function listAssets(db, { q = null, category = null, status = null, sort = 'created_at', dir = 'asc' } = {}) {
   const where = [];
   const args = [];
   if (typeof q === 'string' && q.length > 0) {
@@ -66,7 +66,7 @@ function listAssets(db, { q = null, category = null, status = null, sort = 'name
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const sortCol = sort === 'created_at' ? 'created_at' : 'name';
   const sortDir = dir === 'desc' ? 'DESC' : 'ASC';
-  return db.prepare(`SELECT * FROM assets ${whereSql} ORDER BY ${sortCol} ${sortDir}`).all(...args);
+  return db.prepare(`SELECT * FROM assets ${whereSql} ORDER BY ${sortCol} ${sortDir}, rowid ${sortDir}`).all(...args);
 }
 
 function getAsset(db, id) {

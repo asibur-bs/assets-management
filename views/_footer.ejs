@@ -174,19 +174,6 @@
       });
     }
   });
-  var themeSelect = document.getElementById('theme-select');
-  if (themeSelect) {
-    var current = document.documentElement.getAttribute('data-theme') || 'system';
-    if (themeSelect.querySelector('option[value="' + current + '"]')) themeSelect.value = current;
-    themeSelect.addEventListener('change', function () {
-      document.documentElement.setAttribute('data-theme', themeSelect.value);
-      try {
-        localStorage.setItem('asset-tracker-theme', themeSelect.value);
-      } catch (err) {
-        /* the choice still applies for this page */
-      }
-    });
-  }
 })();
 </script>
 </body>

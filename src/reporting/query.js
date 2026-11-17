@@ -86,9 +86,9 @@ function sharedAssetWhere(rawFilter) {
 }
 
 function orderBySql(filter) {
-  const column = SORT_COLUMN_SQL[filter.sort_column] ?? SORT_COLUMN_SQL.name;
-  const direction = SORT_DIRECTION_SQL[filter.sort_direction] ?? SORT_DIRECTION_SQL.asc;
-  return `ORDER BY ${column} ${direction}`;
+  const column = SORT_COLUMN_SQL[filter.sort_column] ?? SORT_COLUMN_SQL.created_at;
+  const direction = SORT_DIRECTION_SQL[filter.sort_direction] ?? SORT_DIRECTION_SQL.desc;
+  return `ORDER BY ${column} ${direction}, rowid ${direction}`;
 }
 
 function bucketAlias(status) {
@@ -158,7 +158,8 @@ function listHolders(db, holderSearch) {
       `SELECT
          ${HOLDER_KEY_SQL} AS holder_key,
          ${NEVER_HELD_SQL} AS never_held,
-         COUNT(*) AS asset_count
+         COUNT(*) AS asset_count,
+         MIN(created_at) AS first_created
        FROM assets
        GROUP BY ${HOLDER_KEY_SQL}, ${NEVER_HELD_SQL}`
     )
@@ -174,10 +175,13 @@ function listHolders(db, holderSearch) {
       displayHolder: derived.displayHolder,
       count: Number(group.asset_count),
       neverHeld: derived.neverHeld === true,
+      firstCreated: group.first_created || '',
     });
   }
 
   rows.sort((a, b) => {
+    if (a.firstCreated > b.firstCreated) return -1;
+    if (a.firstCreated < b.firstCreated) return 1;
     if (a.displayHolder < b.displayHolder) return -1;
     if (a.displayHolder > b.displayHolder) return 1;
     if (a.neverHeld === b.neverHeld) return 0;

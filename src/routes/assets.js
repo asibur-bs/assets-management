@@ -218,8 +218,8 @@ function formFilters(sanitized) {
     search_text: sanitized.search_text || '',
     category: sanitized.category || '',
     status: sanitized.status || '',
-    sort_column: sanitized.sort_column || 'name',
-    sort_direction: sanitized.sort_direction || 'asc',
+    sort_column: sanitized.sort_column || 'created_at',
+    sort_direction: sanitized.sort_direction || 'desc',
     holder: sanitized.holder || '',
   };
 }
@@ -232,8 +232,8 @@ function exportQuery(filters) {
   add('search_text', filters.search_text);
   add('category', filters.category);
   add('status', filters.status);
-  add('sort_column', filters.sort_column || 'name');
-  add('sort_direction', filters.sort_direction || 'asc');
+  add('sort_column', filters.sort_column || 'created_at');
+  add('sort_direction', filters.sort_direction || 'desc');
   add('holder', filters.holder);
   return pairs.join('&');
 }
@@ -253,8 +253,8 @@ function listHref(filters, page) {
   add('search_text', filters.search_text);
   add('category', filters.category);
   add('status', filters.status);
-  if (filters.sort_column && filters.sort_column !== 'name') add('sort_column', filters.sort_column);
-  if (filters.sort_direction && filters.sort_direction !== 'asc') add('sort_direction', filters.sort_direction);
+  if (filters.sort_column && filters.sort_column !== 'created_at') add('sort_column', filters.sort_column);
+  if (filters.sort_direction && filters.sort_direction !== 'desc') add('sort_direction', filters.sort_direction);
   add('holder', filters.holder);
   if (page > 1) add('page', String(page));
   const query = pairs.join('&');
@@ -282,8 +282,8 @@ function listRows(db, sanitized) {
     q: sanitized.search_text || null,
     category: sanitized.category || null,
     status: sanitized.status || null,
-    sort: sanitized.sort_column || 'name',
-    dir: sanitized.sort_direction || 'asc',
+    sort: sanitized.sort_column || 'created_at',
+    dir: sanitized.sort_direction || 'desc',
   });
   if (!sanitized.holder) return rows;
   return rows.filter((asset) => holderDimensionMatches(asset.assigned_to, asset.last_assigned_to, sanitized.holder));

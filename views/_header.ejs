@@ -92,6 +92,12 @@
       </svg>
       <span class="nav-label">Profile</span>
     </a>
+    <a class="nav-link" href="/theme" data-testid="nav-theme" title="Theme" <% if (here === '/theme') { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 4.2a7.8 7.8 0 1 0 0 15.6 6.1 6.1 0 0 1 0-15.6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-label">Theme</span>
+    </a>
     <% if (principal) { %>
     <form method="post" action="/sign-out" class="sign-out">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -129,17 +135,6 @@
     <% if (kind === 'detail' || kind === 'error') { %>
       <a class="btn" href="/assets" data-testid="back-to-list">Back to list</a>
     <% } %>
-    <label class="theme-switch">Theme
-      <select id="theme-select" data-testid="theme-select">
-        <option value="system">System</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="ocean">Ocean</option>
-        <option value="forest">Forest</option>
-        <option value="sunset">Sunset</option>
-        <option value="contrast">High contrast</option>
-      </select>
-    </label>
     <% if (principal) { %>
       <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
     <% } %>

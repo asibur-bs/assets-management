@@ -1,6 +1,6 @@
 :root,
-html[data-theme="light"],
-html[data-theme="system"] {
+[data-theme="light"],
+[data-theme="system"] {
   --bg: #f5f7fb;
   --fg: #1a1f2c;
   --muted: #6b7280;
@@ -19,8 +19,8 @@ html[data-theme="system"] {
   --control-font: 0.8125rem;
   color-scheme: light;
 }
-html[data-theme="system"] { color-scheme: light dark; }
-html[data-theme="dark"] {
+[data-theme="system"] { color-scheme: light dark; }
+[data-theme="dark"] {
   --bg: #0f1218;
   --fg: #e7eaf0;
   --muted: #a3adbd;
@@ -37,7 +37,7 @@ html[data-theme="dark"] {
   --overlay: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
-html[data-theme="ocean"] {
+[data-theme="ocean"] {
   --bg: #e5f3f6;
   --fg: #0c2c36;
   --muted: #3d6670;
@@ -54,7 +54,7 @@ html[data-theme="ocean"] {
   --overlay: rgba(12, 44, 54, 0.45);
   color-scheme: light;
 }
-html[data-theme="forest"] {
+[data-theme="forest"] {
   --bg: #e8f3ea;
   --fg: #132418;
   --muted: #3f5c48;
@@ -71,7 +71,7 @@ html[data-theme="forest"] {
   --overlay: rgba(19, 36, 24, 0.45);
   color-scheme: light;
 }
-html[data-theme="sunset"] {
+[data-theme="sunset"] {
   --bg: #fbf1e8;
   --fg: #3a2416;
   --muted: #7a5844;
@@ -88,7 +88,7 @@ html[data-theme="sunset"] {
   --overlay: rgba(58, 36, 22, 0.45);
   color-scheme: light;
 }
-html[data-theme="contrast"] {
+[data-theme="contrast"] {
   --bg: #ffffff;
   --fg: #000000;
   --muted: #1a1a1a;
@@ -106,7 +106,7 @@ html[data-theme="contrast"] {
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  html[data-theme="system"] {
+  [data-theme="system"] {
     --bg: #0f1218;
     --fg: #e7eaf0;
     --muted: #a3adbd;
@@ -253,26 +253,51 @@ button.nav-link { width: 100%; border: 0; background: none; color: var(--fg); fo
   .sign-in-stage { grid-template-columns: 1fr; }
   .sign-in-banner { border-right: 0; border-bottom: 1px solid var(--border); }
 }
-.theme-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--control-font);
-  line-height: 1;
-  white-space: nowrap;
-}
-.theme-switch select {
-  height: var(--control-h);
-  padding: 0 0.45rem;
+.theme-page { display: grid; gap: 0.75rem; width: min(46rem, 100%); }
+.theme-page h2 { margin: 0; }
+.theme-page .muted { margin: 0; }
+.theme-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.75rem; }
+.theme-choice {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--input);
+  border-radius: 6px;
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
-  font-size: var(--control-font);
+  text-align: left;
+  cursor: pointer;
 }
+.theme-choice:hover { border-color: color-mix(in srgb, var(--fg) 24%, var(--border)); }
+.theme-choice:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.theme-choice[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.theme-preview {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 4.6rem;
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.theme-preview-bar { height: 0.45rem; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); }
+.theme-preview-line { height: 0.35rem; border-radius: 3px; background: var(--fg); opacity: 0.8; }
+.theme-preview-line.short { width: 62%; }
+.theme-preview-chip {
+  justify-self: start;
+  margin-top: 0.1rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.theme-choice-name { font-size: 0.9rem; }
+.theme-choice-state { display: none; color: var(--primary); font-size: 0.75rem; }
+.theme-choice[aria-pressed="true"] .theme-choice-state { display: block; }
 .container { width: 100%; max-width: none; min-width: 0; margin: 0; padding: 1.25rem 1.5rem 2rem; flex: 1; }
 h1 { margin: 0; font-size: 1.2rem; line-height: 1.2; }
 h2 { font-size: 1.05rem; line-height: 1.3; }

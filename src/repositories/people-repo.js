@@ -50,7 +50,7 @@ function listPeople(db, search) {
   const filter = searchClause(search);
   return db
     .prepare(
-      `SELECT ${COLUMNS} FROM people ${filter.sql} ORDER BY name COLLATE NOCASE, email COLLATE NOCASE`
+      `SELECT ${COLUMNS} FROM people ${filter.sql} ORDER BY created_at DESC, name COLLATE NOCASE, email COLLATE NOCASE`
     )
     .all(...filter.args);
 }

@@ -84,14 +84,23 @@ describe('view rendering', () => {
     expect(res.text).toContain('class="nav-label">Holders');
     expect(res.text).toContain('data-testid="acting-as"');
     expect(res.text).toContain('data-testid="skip-link"');
-    expect(res.text).toContain('data-testid="theme-select"');
-    expect(res.text).toContain('>System</option>');
-    expect(res.text).toContain('>Light</option>');
-    expect(res.text).toContain('>Dark</option>');
-    expect(res.text).toContain('>Ocean</option>');
-    expect(res.text).toContain('>Forest</option>');
-    expect(res.text).toContain('>Sunset</option>');
-    expect(res.text).toContain('>High contrast</option>');
+    expect(res.text).toContain('data-testid="nav-theme"');
+    expect(res.text).toContain('href="/theme"');
+  });
+
+  it('the theme page offers each appearance as a choice', async () => {
+    const res = await client.get('/theme');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('data-testid="theme-page"');
+    expect(res.text).toContain('aria-current="page"');
+    ['system', 'light', 'dark', 'ocean', 'forest', 'sunset', 'contrast'].forEach((id) => {
+      expect(res.text).toContain(`data-testid="theme-${id}"`);
+      expect(res.text).toContain(`data-theme-choice="${id}"`);
+      expect(res.text).toContain(`data-theme="${id}"`);
+    });
+    expect(res.text).toContain('System');
+    expect(res.text).toContain('High contrast');
+    expect(res.text).not.toContain('<select');
   });
 
   it('escapes a name that looks like markup', async () => {
@@ -172,32 +181,32 @@ describe('view rendering', () => {
 
     const first = await client.get('/assets');
     expect(first.text).toContain('Showing 1–20 of 21 records');
-    expect(first.text).toContain('Paged 01');
-    expect(first.text).toContain('Paged 20');
-    expect(first.text).not.toContain('Paged 21');
+    expect(first.text).toContain('Paged 21');
+    expect(first.text).toContain('Paged 02');
+    expect(first.text).not.toContain('Paged 01');
     expect(first.text).toContain('data-testid="pagination"');
     expect(first.text).toContain('href="/assets?page=2"');
     expect(first.text).toContain('Page 1 of 2');
-    expect(first.text).toContain('href="/assets/export?sort_column=name&amp;sort_direction=asc"');
+    expect(first.text).toContain('href="/assets/export?sort_column=created_at&amp;sort_direction=desc"');
     expect(first.text).not.toMatch(/\/assets\/export\?[^"]*page=/);
 
     const second = await client.get('/assets').query({ page: '2' });
     expect(second.text).toContain('Showing 21–21 of 21 records');
-    expect(second.text).toContain('Paged 21');
-    expect(second.text).not.toContain('Paged 01');
+    expect(second.text).toContain('Paged 01');
+    expect(second.text).not.toContain('Paged 21');
     expect(second.text).toContain('Page 2 of 2');
     expect(second.text).not.toMatch(/\/assets\/export\?[^"]*page=/);
 
     const filtered = await client.get('/assets').query({ status: 'in-stock', page: '2', sort_column: 'name' });
-    expect(filtered.text).toContain('Paged 21');
+    expect(filtered.text).toContain('Paged 01');
     expect(filtered.text).toContain('status=in-stock');
-    expect(filtered.text).toContain('href="/assets?status=in-stock"');
-    expect(filtered.text).not.toContain('Paged 01');
+    expect(filtered.text).toContain('href="/assets?status=in-stock&amp;sort_column=name"');
+    expect(filtered.text).not.toContain('Paged 21');
 
     const bogus = await client.get('/assets').query({ page: 'nope' });
     expect(bogus.text).toContain('Showing 1–20 of 21 records');
-    expect(bogus.text).toContain('Paged 01');
-    expect(bogus.text).not.toContain('Paged 21');
+    expect(bogus.text).toContain('Paged 21');
+    expect(bogus.text).not.toContain('Paged 01');
   });
 
   it('list view links each asset row to its detail view', async () => {
