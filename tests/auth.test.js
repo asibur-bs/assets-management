@@ -73,7 +73,10 @@ describe('sign-in, roles, and users', () => {
 
     const home = await agent.get('/assets');
     expect(home.status).toBe(200);
-    expect(home.text).toContain('Acting as: Ada Lovelace');
+    expect(home.text).toContain('class="actor-avatar" href="/profile"');
+    expect(home.text).toContain('aria-label="Ada Lovelace"');
+    expect(home.text).toContain('>AL<');
+    expect(home.text).not.toContain('Acting as:');
     expect(home.text).toContain('data-testid="nav-users"');
     expect(home.text).toContain('data-testid="nav-profile"');
     expect(home.text).toContain('data-testid="sign-out"');
@@ -119,10 +122,13 @@ describe('sign-in, roles, and users', () => {
     const client = clientFor(app, reader);
     const list = await client.get('/assets');
     expect(list.status).toBe(200);
-    expect(list.text).toContain('Acting as: Rio');
+    expect(list.text).toContain('aria-label="Rio"');
+    expect(list.text).toContain('>RI<');
+    expect(list.text).not.toContain('Acting as:');
     expect(list.text).not.toContain('data-testid="nav-users"');
     expect(list.text).toContain('data-testid="nav-profile"');
     expect(list.text).not.toContain('data-testid="nav-new"');
+    expect(list.text).not.toContain('data-testid="import-fab"');
     expect(list.text).toContain('data-testid="sign-out"');
 
     const users = await client.get('/users');

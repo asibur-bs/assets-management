@@ -1,5 +1,6 @@
 'use strict';
 
+const { displayInitials } = require('../auth/users');
 const { runAsPrincipal } = require('../auth/principal');
 const { COOKIE_NAME, cookieOptions, readCookie, readSession, tokensMatch } = require('../auth/sessions');
 
@@ -20,6 +21,7 @@ function attachPrincipal(db) {
     req.principal = principal;
     res.locals.principal = principal;
     res.locals.actor = principal ? principal.displayName : '';
+    res.locals.initials = principal ? displayInitials(principal.displayName) : '';
     res.locals.canWrite = Boolean(principal && principal.role === 'administrator');
     res.locals.csrfToken = principal ? principal.csrf : '';
     runAsPrincipal(principal, () => next());

@@ -275,6 +275,29 @@ function getAssetWithAudit(db, id) {
   return { asset, audit };
 }
 
+function importAssets(db, records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    throw makeError('There are no assets to import.', 'VALIDATION_ERROR');
+  }
+  return inImmediate(db, () => {
+    assertCanMutate();
+    const actor = actingName();
+    const created = [];
+    for (const record of records) {
+      const errors = repo.validateCreate(record);
+      if (errors.length) {
+        const err = makeError(errors.join('; '), 'VALIDATION_ERROR');
+        err.details = errors;
+        throw err;
+      }
+      const asset = repo.createAsset(db, record);
+      repo.recordAudit(db, asset.id, 'create', describeCreate(asset), actor);
+      created.push(asset);
+    }
+    return created;
+  });
+}
+
 function listAssets(db, filters) {
   return repo.listAssets(db, filters);
 }
@@ -284,6 +307,7 @@ module.exports = {
   editAsset,
   transitionAsset,
   deleteAsset,
+  importAssets,
   previewSerialCollision,
   getAssetWithAudit,
   listAssets,

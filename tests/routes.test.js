@@ -77,7 +77,8 @@ describe('asset routes (integration)', () => {
     expect(res.text).toContain('Assets');
     expect(res.text).toContain('No assets yet.');
     expect(res.text).toContain('Showing 0 of 0 records');
-    expect(res.text).toContain('Acting as: Ada');
+    expect(res.text).toContain('aria-label="Ada"');
+    expect(res.text).toContain('>AD<');
   });
 
   it('the list form exposes the five filters and keeps holder only in the query string', async () => {
@@ -147,7 +148,8 @@ describe('asset routes (integration)', () => {
     const id = latestAssetId(db);
     expect(res.headers.location).toBe(`/assets/${id}`);
     const detail = await casey.get(`/assets/${id}`);
-    expect(detail.text).toContain('Acting as: Casey');
+    expect(detail.text).toContain('aria-label="Casey"');
+    expect(detail.text).toContain('>CA<');
     expect(detail.text).toContain('data-testid="audit-actor" class="actor-person">Casey');
     expect(detail.text).not.toContain('Mallory');
     expect(detail.text).not.toContain('name="actor"');

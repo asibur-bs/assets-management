@@ -136,7 +136,7 @@
       <a class="btn" href="/assets" data-testid="back-to-list">Back to list</a>
     <% } %>
     <% if (principal) { %>
-      <p class="actor" data-testid="acting-as">Acting as: <%= actor %></p>
+      <a class="actor-avatar" href="/profile" data-testid="acting-as" aria-label="<%= actor %>" title="<%= actor %>"<% if (here === '/profile') { %> aria-current="page"<% } %>><%= initials %></a>
     <% } %>
   </div>
 </header>

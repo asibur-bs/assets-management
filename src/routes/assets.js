@@ -6,6 +6,14 @@ const repo = require('../repositories/assets-repo');
 const { countPeople, getPerson, listPeople } = require('../repositories/people-repo');
 const service = require('../services/asset-service');
 const { paginateRows } = require('../pagination');
+const {
+  XLSX_TYPE,
+  isXlsxName,
+  manualBuffer,
+  readAssetRows,
+  reviewRows,
+  templateBuffer,
+} = require('../import/workbook');
 const { translate } = require('../domain/translation');
 const {
   STATUS_VALUES,
@@ -441,7 +449,6 @@ function holderBreakdowns(db) {
     });
 }
 
-
 function presentHolders(result) {
   const source = Array.isArray(result) ? { holders: result } : result || {};
   const holders = Array.isArray(source.holders) ? source.holders : Array.isArray(source.rows) ? source.rows : [];
@@ -504,19 +511,101 @@ function assetsRouter(db) {
     );
   }
 
+  function renderAssetList(res, query, statusCode, extras) {
+    const sanitized = readFilter(query);
+    const filters = formFilters(sanitized);
+    const page = paginate(filters, listRows(db, sanitized), query.page);
+    res.status(statusCode).render('list', {
+      assets: page.assets,
+      filters,
+      exportQuery: exportQuery(filters),
+      shown: page.assets.length,
+      matching: page.matching,
+      pagination: page,
+      importReport: null,
+      ...(extras || {}),
+    });
+  }
+
+  function sendWorkbook(res, buffer, filename) {
+    res.setHeader('Content-Type', XLSX_TYPE);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
+  function importFailure(title, intro, messages) {
+    return { title, intro, messages: messages || [], saved: false };
+  }
+
+  async function importReportFor(req) {
+    if (req.importUploadError && req.importUploadError.code === 'LIMIT_FILE_SIZE') {
+      return importFailure(
+        'The workbook is too large',
+        'The file is larger than 2 MB. Remove extra sheets or split the assets into a smaller workbook, then import it again. No assets were added.'
+      );
+    }
+    if (req.importUploadError) {
+      return importFailure(
+        'The workbook could not be uploaded',
+        'Choose the .xlsx file from the import template and try again. No assets were added.'
+      );
+    }
+    const file = req.file;
+    if (!file || !file.buffer) {
+      return importFailure(
+        'Choose an Excel workbook',
+        'No file was selected. Download the import template, fill it in, and choose that .xlsx file.'
+      );
+    }
+    if (!isXlsxName(file.originalname)) {
+      return importFailure(
+        'Use an Excel workbook',
+        'Import only an Excel workbook with the .xlsx extension. Download the template, fill it in, and save it as .xlsx. No assets were added.'
+      );
+    }
+    const parsed = await readAssetRows(file.buffer);
+    if (parsed.problems.length > 0) {
+      return importFailure(
+        'The workbook needs changes',
+        'No assets were added. Correct the file, save it as .xlsx, and import it again.',
+        parsed.problems
+      );
+    }
+    const reviewed = reviewRows(parsed.rows, (category, serialOrKey) => {
+      const preview = service.previewSerialCollision(db, { category, serialOrKey });
+      if (!preview.collision || !preview.existingAsset) return null;
+      return { name: preview.existingAsset.name };
+    });
+    if (reviewed.problems.length > 0) {
+      return importFailure(
+        'The workbook needs changes',
+        'No assets were added. Correct the rows below, save the workbook as .xlsx, and import it again.',
+        reviewed.problems
+      );
+    }
+    try {
+      const created = service.importAssets(db, reviewed.records);
+      const count = created.length;
+      return {
+        title: 'Import finished',
+        intro: `Imported ${count} ${count === 1 ? 'asset' : 'assets'}. Each one is in stock. Assign it from the asset page when someone should hold it.`,
+        messages: [],
+        saved: true,
+      };
+    } catch (err) {
+      if (err.code === 'DUPLICATE_ASSET') {
+        return importFailure(
+          'The workbook needs changes',
+          'A serial in this file was registered by someone else while the file was being read. No assets were added. Import the file again to see which row now conflicts.'
+        );
+      }
+      throw err;
+    }
+  }
+
   router.get('/', (req, res, next) => {
     try {
-      const sanitized = readFilter(req.query);
-      const filters = formFilters(sanitized);
-      const page = paginate(filters, listRows(db, sanitized), req.query.page);
-      res.render('list', {
-        assets: page.assets,
-        filters,
-        exportQuery: exportQuery(filters),
-        shown: page.assets.length,
-        matching: page.matching,
-        pagination: page,
-      });
+      renderAssetList(res, req.query, 200);
     } catch (err) {
       next(err);
     }
@@ -530,6 +619,31 @@ function assetsRouter(db) {
       res.setHeader('Content-Type', CSV_CONTENT_TYPE);
       res.setHeader('Content-Disposition', `attachment; filename="${CSV_FILENAME}"`);
       res.send(renderCsv(rows));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/import/manual', requireWriter, async (req, res, next) => {
+    try {
+      sendWorkbook(res, await manualBuffer(), 'asset-import-manual.xlsx');
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/import/template', requireWriter, async (req, res, next) => {
+    try {
+      sendWorkbook(res, await templateBuffer(), 'asset-import-template.xlsx');
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/import', async (req, res, next) => {
+    try {
+      const report = await importReportFor(req);
+      renderAssetList(res, {}, report.saved ? 200 : 400, { importReport: report });
     } catch (err) {
       next(err);
     }
@@ -776,7 +890,10 @@ function shortWhen(value) {
 }
 
 function briefChange(description) {
-  let text = String(description || '').replace(/"[^"]+"/, '').replace(/\s{2,}/g, ' ').trim();
+  let text = String(description || '')
+    .replace(/"[^"]+"/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   text = text.replace(/^Registered in category ([a-z-]+) with serial-or-key/i, (_, category) => {
     const label = category === 'software-license' ? 'software license' : category.replace(/-/g, ' ');
     return `Registered as ${label}, key`;
@@ -831,9 +948,7 @@ function mountAuxiliaryRoutes(app, db) {
       });
       const needle = search.trim().toLowerCase();
       const matched = needle
-        ? presented.rows.filter((row) =>
-            [row.name, row.email, row.note].join('\n').toLowerCase().includes(needle)
-          )
+        ? presented.rows.filter((row) => [row.name, row.email, row.note].join('\n').toLowerCase().includes(needle))
         : presented.rows;
       const statusColumns = STATUS_VALUES.map((status) => ({ status, label: statusLabel(status) }));
       const pagination = paginateRows(matched, req.query.page, (page) => holderHref(search, page));

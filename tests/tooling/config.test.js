@@ -59,9 +59,9 @@ describe('tooling configuration', () => {
     expect(fs.existsSync(path.join(root, 'compose.yml'))).toBe(false);
   });
 
-  it('NFR2.4.6 — production deps unchanged; tooling packages are devDependencies', () => {
+  it('NFR2.4.6 — production deps are the application packages; tooling packages are devDependencies', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-    expect(Object.keys(pkg.dependencies).sort()).toEqual(['better-sqlite3', 'ejs', 'express']);
+    expect(Object.keys(pkg.dependencies).sort()).toEqual(['better-sqlite3', 'ejs', 'exceljs', 'express', 'multer']);
     for (const name of ['prettier', 'eslint', '@eslint/js', 'lefthook']) {
       expect(pkg.devDependencies[name]).toBeDefined();
       expect(pkg.dependencies[name]).toBeUndefined();

@@ -118,6 +118,73 @@
     <span class="status status-<%= status %>"><%= statusLabel(status) %></span>
   <% }); %>
 </p>
+<% if (canWrite) { %>
+<div class="import-fab" data-testid="import-fab">
+  <div class="import-fab-menu" id="import-actions" data-import-menu hidden>
+    <a class="import-fab-action" href="/assets/import/manual" data-testid="import-manual" title="Download import manual" aria-label="Download import manual">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="7.25" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 11v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M12 8.15h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </a>
+    <a class="import-fab-action" href="/assets/import/template" data-testid="import-template" title="Download import template" aria-label="Download import template">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 4.5v9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M8.2 10.2 12 14l3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6 17.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </a>
+    <button type="button" class="import-fab-action" data-open-dialog="import-assets" data-testid="import-open" title="Import assets" aria-label="Import assets">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 14.5v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M8.2 8.8 12 5l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6 17.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <button type="button" class="import-fab-toggle" data-import-toggle data-testid="import-toggle" aria-expanded="false" aria-controls="import-actions" aria-label="Open import actions">
+    <svg class="icon-open" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <svg class="icon-close" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+<dialog id="import-assets" class="filter-dialog" aria-labelledby="import-assets-title">
+  <form method="post" action="/assets/import" enctype="multipart/form-data" class="dialog-form">
+    <div class="dialog-head">
+      <h2 id="import-assets-title">Import assets</h2>
+      <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+    </div>
+    <p class="muted">Choose an Excel workbook (.xlsx) made from the import template. If any row has a problem, nothing from the file is added.</p>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+    <label class="field">Workbook
+      <input type="file" name="workbook" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required data-testid="import-file" />
+    </label>
+    <div class="filter-actions">
+      <button type="submit" class="btn primary" data-testid="import-submit">Import</button>
+    </div>
+  </form>
+</dialog>
+<% } %>
+<% if (importReport) { %>
+<dialog id="import-report" class="filter-dialog" data-reopen aria-labelledby="import-report-title" data-testid="import-report">
+  <div class="dialog-head">
+    <h2 id="import-report-title"><%= importReport.title %></h2>
+    <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+  </div>
+  <p data-testid="import-intro"><%= importReport.intro %></p>
+  <% if (importReport.messages && importReport.messages.length) { %>
+    <ul class="import-problems" data-testid="import-messages">
+      <% importReport.messages.forEach(function (message) { %>
+        <li><%= message %></li>
+      <% }); %>
+    </ul>
+  <% } %>
+</dialog>
+<% } %>
 <script>
 (function () {
   var input = document.querySelector('[data-testid="filter-search-text"]');
@@ -143,4 +210,33 @@
   });
 })();
 </script>
+<% if (canWrite) { %>
+<script>
+(function () {
+  var fab = document.querySelector('[data-testid="import-fab"]');
+  if (!fab) return;
+  var menu = fab.querySelector('[data-import-menu]');
+  var toggle = fab.querySelector('[data-import-toggle]');
+  function setOpen(open) {
+    menu.hidden = !open;
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Close import actions' : 'Open import actions');
+  }
+  toggle.addEventListener('click', function () {
+    setOpen(menu.hidden);
+  });
+  fab.addEventListener('click', function (event) {
+    event.stopPropagation();
+  });
+  document.addEventListener('click', function () {
+    setOpen(false);
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') setOpen(false);
+  });
+  var openImport = fab.querySelector('[data-open-dialog="import-assets"]');
+  if (openImport) openImport.addEventListener('click', function () { setOpen(false); });
+})();
+</script>
+<% } %>
 <%- include('_footer') %>

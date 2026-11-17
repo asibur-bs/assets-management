@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const express = require('express');
+const multer = require('multer');
 const { attachPrincipal, requireCsrf, requireUser } = require('./auth/guard');
 const { translate } = require('./domain/translation');
 const {
@@ -43,6 +44,11 @@ function showWhen(value) {
   return `${day} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${hour}:${minute}`;
 }
 
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+}).single('workbook');
+
 function createApp(db) {
   const app = express();
   app.disable('x-powered-by');
@@ -72,6 +78,13 @@ function createApp(db) {
   app.use(attachPrincipal(db));
   mountAuthRoutes(app, db);
   app.use(requireUser);
+  app.use((req, res, next) => {
+    if (req.method !== 'POST' || req.path !== '/assets/import') return next();
+    importUpload(req, res, (err) => {
+      if (err) req.importUploadError = err;
+      next();
+    });
+  });
   app.use(requireCsrf);
   app.post('/sign-out', signOut(db));
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const { verifyPassword } = require('../auth/passwords');
-const { ROLES, createUser, getUser, getUserByUsername, listUsers, updateUser } = require('../auth/users');
+const { ROLES, createUser, displayInitials, getUser, getUserByUsername, listUsers, updateUser } = require('../auth/users');
 const { paginateRows } = require('../pagination');
 
 function queryString(value) {
@@ -43,16 +43,6 @@ function errorDetails(err) {
   return ['The user could not be saved.'];
 }
 
-function profileInitials(displayName) {
-  const parts = String(displayName || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (parts.length === 0) return '?';
-  const letters = parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0][0]}${parts[parts.length - 1][0]}`;
-  return letters.toUpperCase();
-}
-
 function mountUserRoutes(app, db) {
   app.get('/profile', (req, res, next) => {
     const user = getUser(db, req.principal.id);
@@ -61,7 +51,7 @@ function mountUserRoutes(app, db) {
       err.code = 'NOT_FOUND';
       return next(err);
     }
-    res.render('profile', { user, initials: profileInitials(user.displayName) });
+    res.render('profile', { user, initials: displayInitials(user.displayName) });
   });
 
   app.get('/theme', (req, res) => {
