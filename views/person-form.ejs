@@ -1,0 +1,32 @@
+<% pageTitle = mode === 'edit' ? 'Edit person' : 'Add person'; headerKind = 'people'; %>
+<%- include('_header') %>
+<div class="form-page">
+<% if (errors && errors.length) { %>
+  <div class="errors" data-testid="person-errors">
+    <% errors.forEach(function (err) { %>
+      <p data-testid="person-error"><%= err %></p>
+    <% }); %>
+  </div>
+<% } %>
+<form method="post" action="<%= mode === 'edit' ? '/people/' + person.id : '/people' %>" class="form" data-testid="person-form">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+  <label>
+    Name
+    <input type="text" name="name" required value="<%= values.name %>" data-testid="person-name" />
+  </label>
+  <label>
+    Email
+    <input type="email" name="email" required value="<%= values.email %>" autocomplete="off" data-testid="person-email-input" />
+  </label>
+  <p class="muted">Email tells two people with the same name apart. It cannot be shared.</p>
+  <label>
+    Note
+    <input type="text" name="note" value="<%= values.note %>" placeholder="Team or role" data-testid="person-note" />
+  </label>
+  <div class="form-actions">
+    <button type="submit" class="btn primary" data-testid="person-save"><%= mode === 'edit' ? 'Save' : 'Add person' %></button>
+    <a class="btn" href="/people">Cancel</a>
+  </div>
+</form>
+</div>
+<%- include('_footer') %>

@@ -134,6 +134,7 @@ function transitionPatch(db, current, edge, request) {
   const patch = { status: edge.to };
   if (edge.auditAction === 'assign') {
     patch.assigned_to = requiredAssignee(request.assignee);
+    patch.assigned_person_id = request.personId || null;
     patch.assigned_at = repo.nowIso(db);
     patch.returned_at = null;
     return patch;
@@ -141,14 +142,18 @@ function transitionPatch(db, current, edge, request) {
   if (edge.auditAction === 'return') {
     const departing = storedHolder(current.assigned_to);
     patch.assigned_to = null;
+    patch.assigned_person_id = null;
     patch.returned_at = repo.nowIso(db);
     if (departing !== null) patch.last_assigned_to = departing;
+    if (current.assigned_person_id) patch.last_assigned_person_id = current.assigned_person_id;
     return patch;
   }
   if (edge.auditAction === 'mark-lost' || edge.auditAction === 'discarded') {
     const departing = storedHolder(current.assigned_to);
     patch.assigned_to = null;
+    patch.assigned_person_id = null;
     if (departing !== null) patch.last_assigned_to = departing;
+    if (current.assigned_person_id) patch.last_assigned_person_id = current.assigned_person_id;
     return patch;
   }
   if (edge.auditAction === 'recovered') {
@@ -160,7 +165,9 @@ function transitionPatch(db, current, edge, request) {
 function describeTransition(current, edge, request) {
   const name = current.name;
   if (edge.auditAction === 'assign') {
-    return `Assigned "${name}" to ${requiredAssignee(request.assignee)}.`;
+    const who = requiredAssignee(request.assignee);
+    const email = typeof request.personEmail === 'string' ? request.personEmail.trim() : '';
+    return email ? `Assigned "${name}" to ${who} (${email}).` : `Assigned "${name}" to ${who}.`;
   }
   if (edge.auditAction === 'return') {
     const holder = storedHolder(current.assigned_to);

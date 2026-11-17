@@ -14,6 +14,7 @@ const {
 } = require('./domain/vocabulary');
 const assetsRouter = require('./routes/assets');
 const { mountAuthRoutes, signOut } = require('./routes/auth');
+const { mountPeopleRoutes } = require('./routes/people');
 const { mountUserRoutes } = require('./routes/users');
 
 const SORT_LABELS = {
@@ -31,6 +32,17 @@ function showValue(value) {
   return value;
 }
 
+function showWhen(value) {
+  if (value == null || value === '') return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hour = String(date.getUTCHours()).padStart(2, '0');
+  const minute = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${day} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${hour}:${minute}`;
+}
+
 function createApp(db) {
   const app = express();
   app.disable('x-powered-by');
@@ -45,6 +57,7 @@ function createApp(db) {
     label: DIRECTION_LABELS[value] || value,
   }));
   app.locals.showValue = showValue;
+  app.locals.showWhen = showWhen;
   app.locals.isSystemActor = isBackfillActor;
 
   app.use((req, res, next) => {
@@ -61,6 +74,7 @@ function createApp(db) {
   app.post('/sign-out', signOut(db));
 
   app.get('/', (req, res) => res.redirect('/dashboard'));
+  mountPeopleRoutes(app, db);
   mountUserRoutes(app, db);
   assetsRouter.mountAuxiliaryRoutes(app, db);
   app.use('/assets', assetsRouter(db));

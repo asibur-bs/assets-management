@@ -49,8 +49,8 @@
       var dialog = document.getElementById(button.getAttribute('data-open-dialog'));
       openDialog(dialog);
       if (!dialog) return;
-      var select = dialog.querySelector('select');
-      if (select) select.focus();
+      var focus = dialog.querySelector('input:not([type="hidden"]), select, textarea');
+      if (focus) focus.focus();
     });
   });
   document.querySelectorAll('[data-close-dialog]').forEach(function (button) {
@@ -63,6 +63,116 @@
     openDialog(dialog);
     var focus = dialog.querySelector('[autofocus]');
     if (focus) focus.focus();
+  });
+  document.querySelectorAll('[data-person-picker]').forEach(function (picker) {
+    var toggle = picker.querySelector('[data-person-toggle]');
+    var panel = picker.querySelector('[data-person-panel]');
+    var search = picker.querySelector('[data-testid="assign-search"]');
+    var list = picker.querySelector('[data-person-list]');
+    var status = picker.querySelector('[data-person-status]');
+    var value = picker.querySelector('[data-person-value]');
+    var label = picker.querySelector('[data-person-label]');
+    if (!toggle || toggle.disabled) return;
+    var query = '';
+    var offset = 0;
+    var total = 0;
+    var loading = false;
+    var pendingReset = false;
+    var timer = null;
+
+    function escapeText(text) {
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function setOpen(open) {
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        search.focus();
+        if (!list.children.length) load(true);
+      }
+    }
+
+    function load(reset) {
+      if (loading) {
+        if (reset) pendingReset = true;
+        return;
+      }
+      if (reset) {
+        offset = 0;
+        total = 0;
+        list.innerHTML = '';
+      } else if (offset >= total && total > 0) {
+        return;
+      }
+      loading = true;
+      status.textContent = 'Loading…';
+      var url = '/people/options?offset=' + offset + '&q=' + encodeURIComponent(query);
+      fetch(url, { headers: { Accept: 'application/json' } })
+        .then(function (response) { return response.json(); })
+        .then(function (body) {
+          total = body.total || 0;
+          (body.people || []).forEach(function (person) {
+            var item = document.createElement('li');
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.setAttribute('role', 'option');
+            button.innerHTML = '<span>' + escapeText(person.name) + '</span><span class="person-picker-email">' + escapeText(person.email) + '</span>';
+            button.addEventListener('click', function () {
+              value.value = person.id;
+              label.textContent = person.name + ' — ' + person.email;
+              setOpen(false);
+            });
+            item.appendChild(button);
+            list.appendChild(item);
+          });
+          offset += (body.people || []).length;
+          status.textContent = total ? '' : 'No people match.';
+        })
+        .catch(function () {
+          status.textContent = 'Could not load people.';
+        })
+        .then(function () {
+          loading = false;
+          if (pendingReset) {
+            pendingReset = false;
+            load(true);
+            return;
+          }
+          if (!panel.hidden && list.scrollHeight <= list.clientHeight && offset < total) load(false);
+        });
+    }
+
+    toggle.addEventListener('click', function () { setOpen(panel.hidden); });
+    search.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') event.preventDefault();
+      if (event.key === 'Escape') setOpen(false);
+    });
+    search.addEventListener('input', function () {
+      query = search.value.trim();
+      clearTimeout(timer);
+      timer = setTimeout(function () { load(true); }, 200);
+    });
+    list.addEventListener('scroll', function () {
+      if (list.scrollTop + list.clientHeight >= list.scrollHeight - 16) load(false);
+    });
+    document.addEventListener('click', function (event) {
+      if (!picker.contains(event.target)) setOpen(false);
+    });
+    var form = picker.closest('form');
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        if (!value.value) {
+          event.preventDefault();
+          setOpen(true);
+          status.textContent = 'Select a person.';
+        }
+      });
+    }
   });
   var themeSelect = document.getElementById('theme-select');
   if (themeSelect) {

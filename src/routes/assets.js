@@ -3,7 +3,9 @@
 const express = require('express');
 const { requireWriter } = require('../auth/guard');
 const repo = require('../repositories/assets-repo');
+const { countPeople, getPerson, listPeople } = require('../repositories/people-repo');
 const service = require('../services/asset-service');
+const { paginateRows } = require('../pagination');
 const { translate } = require('../domain/translation');
 const {
   STATUS_VALUES,
@@ -17,7 +19,6 @@ const {
 } = require('../domain/vocabulary');
 
 const REASON_ACTIONS = new Set(['mark-lost', 'discarded', 'recovered']);
-const PAGE_SIZE = 20;
 
 const ACTION_TO = {
   assign: 'assigned',
@@ -236,12 +237,6 @@ function exportQuery(filters) {
   return pairs.join('&');
 }
 
-function parsePage(value) {
-  const text = queryString(value).trim();
-  if (!/^[1-9]\d*$/.test(text)) return 1;
-  const page = Number(text);
-  return Number.isSafeInteger(page) ? page : 1;
-}
 
 function listHref(filters, page) {
   const pairs = [];
@@ -259,39 +254,19 @@ function listHref(filters, page) {
   return query.length > 0 ? `/assets?${query}` : '/assets';
 }
 
-function pageWindow(page, pageCount) {
-  const start = Math.max(1, page - 2);
-  const end = Math.min(pageCount, page + 2);
-  const pages = [];
-  if (start > 1) pages.push(1);
-  if (start > 2) pages.push(null);
-  for (let number = Math.max(start, 1); number <= end; number += 1) {
-    if (!pages.includes(number)) pages.push(number);
-  }
-  if (end < pageCount - 1) pages.push(null);
-  if (end < pageCount) pages.push(pageCount);
-  return pages;
-}
-
 function paginate(filters, rows, requestedPage) {
-  const matching = rows.length;
-  const pageCount = Math.max(1, Math.ceil(matching / PAGE_SIZE));
-  const page = Math.min(parsePage(requestedPage), pageCount);
-  const startIndex = (page - 1) * PAGE_SIZE;
-  const assets = rows.slice(startIndex, startIndex + PAGE_SIZE);
-  const pages = pageWindow(page, pageCount).map((number) =>
-    number == null ? { ellipsis: true } : { page: number, href: listHref(filters, number), current: number === page }
-  );
+  const page = paginateRows(rows, requestedPage, (number) => listHref(filters, number));
   return {
-    assets,
-    matching,
-    page,
-    pageCount,
-    rangeStart: matching === 0 ? 0 : startIndex + 1,
-    rangeEnd: matching === 0 ? 0 : startIndex + assets.length,
-    prevHref: page > 1 ? listHref(filters, page - 1) : null,
-    nextHref: page < pageCount ? listHref(filters, page + 1) : null,
-    pages,
+    assets: page.rows,
+    matching: page.matching,
+    page: page.page,
+    pageCount: page.pageCount,
+    rangeStart: page.rangeStart,
+    rangeEnd: page.rangeEnd,
+    prevHref: page.prevHref,
+    nextHref: page.nextHref,
+    pages: page.pages,
+    label: 'Asset pages',
   };
 }
 
@@ -430,6 +405,10 @@ function assetsRouter(db) {
   });
 
   function renderDetail(res, loaded, statusCode, extras) {
+    const holderPerson = loaded.asset.assigned_person_id ? getPerson(db, loaded.asset.assigned_person_id) : null;
+    const lastHolderPerson = loaded.asset.last_assigned_person_id
+      ? getPerson(db, loaded.asset.last_assigned_person_id)
+      : null;
     res.status(statusCode).render(
       'detail',
       Object.assign(
@@ -439,6 +418,9 @@ function assetsRouter(db) {
           actions: actionsFor(loaded.asset),
           alert: null,
           reasonError: null,
+          peopleCount: countPeople(db),
+          holderPerson,
+          lastHolderPerson,
         },
         extras
       )
@@ -648,7 +630,23 @@ function assetsRouter(db) {
     }
 
     const reason = queryString(req.body.reason);
-    const assignee = queryString(req.body.holder).trim() || queryString(req.body.assigned_to).trim();
+    let assignee = queryString(req.body.holder).trim() || queryString(req.body.assigned_to).trim();
+    let personId = null;
+    let personEmail = null;
+    const postedPerson = queryString(req.body.person_id).trim();
+    if (to === 'assigned' && postedPerson) {
+      const person = getPerson(db, postedPerson);
+      if (!person) {
+        const loaded = loadDetail(db, id);
+        if (!loaded) return next(notFound());
+        return renderDetail(res, loaded, translate('VALIDATION_ERROR').status, {
+          alert: 'Choose a person from the list.',
+        });
+      }
+      assignee = person.name;
+      personId = person.id;
+      personEmail = person.email;
+    }
 
     if (REASON_ACTIONS.has(action)) {
       const loaded = loadDetail(db, id);
@@ -667,7 +665,7 @@ function assetsRouter(db) {
     }
 
     try {
-      service.transitionAsset(db, id, { to, assignee, reason });
+      service.transitionAsset(db, id, { to, assignee, reason, personId, personEmail });
       res.redirect(303, `/assets/${id}`);
     } catch (err) {
       const loaded = loadDetail(db, id);
@@ -689,6 +687,7 @@ function assetsRouter(db) {
 
   return router;
 }
+
 
 function mountAuxiliaryRoutes(app, db) {
   app.get('/dashboard', (req, res, next) => {

@@ -52,6 +52,11 @@ const MIGRATIONS = [
     name: 'users-and-sessions',
     up: usersAndSessions,
   },
+  {
+    version: 5,
+    name: 'people',
+    up: peopleDirectory,
+  },
 ];
 
 function sqlString(value) {
@@ -230,6 +235,21 @@ function createIndexesAndTriggers(db) {
       SELECT RAISE(ABORT, 'audit_log is append-only');
     END;
   `);
+}
+
+function peopleDirectory(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS people (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+  addColumnIfMissing(db, 'assets', 'assigned_person_id', 'TEXT');
+  addColumnIfMissing(db, 'assets', 'last_assigned_person_id', 'TEXT');
 }
 
 function usersAndSessions(db) {

@@ -12,8 +12,10 @@
       <dt>Category</dt><dd data-testid="asset-category"><%= asset.category %></dd>
       <dt>Serial/Key</dt><dd data-testid="asset-serial"><%= showValue(asset.serial_or_key) %></dd>
       <dt>Model</dt><dd data-testid="asset-model"><%= showValue(asset.model) %></dd>
-      <dt>Holder</dt><dd data-testid="asset-holder"><%= showValue(asset.assigned_to) %></dd>
-      <dt>Last holder</dt><dd data-testid="asset-last-holder"><%= showValue(asset.last_assigned_to) %></dd>
+      <dt>Holder</dt>
+      <dd data-testid="asset-holder"><%= showValue(asset.assigned_to) %><% if (holderPerson) { %><span class="holder-email" data-testid="asset-holder-email"><%= holderPerson.email %></span><% } %></dd>
+      <dt>Last holder</dt>
+      <dd data-testid="asset-last-holder"><%= showValue(asset.last_assigned_to) %><% if (lastHolderPerson) { %><span class="holder-email"><%= lastHolderPerson.email %></span><% } %></dd>
       <dt>Assigned at</dt><dd data-testid="asset-assigned-at"><%= showValue(asset.assigned_at) %></dd>
       <dt>Returned at</dt><dd data-testid="asset-returned-at"><%= showValue(asset.returned_at) %></dd>
       <dt>Created</dt><dd data-testid="asset-created"><%= showValue(asset.created_at) %></dd>
@@ -31,13 +33,26 @@
       <% } %>
       <% if (canWrite) { actions.forEach(function (action) { %>
         <% if (action.action === 'assign') { %>
-          <form method="post" action="/assets/<%= asset.id %>" class="inline" data-testid="form-assign">
+          <form method="post" action="/assets/<%= asset.id %>" class="inline assign-form" data-testid="form-assign">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <input type="hidden" name="action" value="assign" />
-            <label class="field">Assign to
-              <input type="text" name="holder" required data-testid="assign-holder" />
-            </label>
-            <button type="submit" class="btn primary" data-testid="action-assign">Assign</button>
+            <div class="field">Assign to
+              <div class="person-picker" data-person-picker data-testid="assign-holder">
+                <input type="hidden" name="person_id" value="" data-person-value <%= peopleCount ? 'required' : 'disabled' %> />
+                <button type="button" class="person-picker-toggle" data-person-toggle aria-expanded="false" aria-haspopup="listbox" <%= peopleCount ? '' : 'disabled' %>>
+                  <span data-person-label><%= peopleCount ? 'Select a person' : 'No people yet' %></span>
+                </button>
+                <div class="person-picker-panel" data-person-panel hidden>
+                  <input type="search" class="person-picker-search" placeholder="Name or email" autocomplete="off" aria-label="Find a person" data-testid="assign-search" />
+                  <ul class="person-picker-list" role="listbox" data-person-list></ul>
+                  <p class="person-picker-status muted" data-person-status></p>
+                </div>
+              </div>
+            </div>
+            <% if (!peopleCount) { %>
+              <p class="muted" data-testid="assign-empty">Add a person before assigning this asset.<% if (canWrite) { %> <a href="/people/new">Add person</a><% } %></p>
+            <% } %>
+            <button type="submit" class="btn primary" data-testid="action-assign" <%= peopleCount ? '' : 'disabled' %>>Assign</button>
           </form>
         <% } else if (action.action === 'return') { %>
           <form method="post" action="/assets/<%= asset.id %>" class="action-form" data-testid="form-return">

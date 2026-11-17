@@ -177,7 +177,8 @@ function updateAsset(db, id, patch) {
       `UPDATE assets
           SET name = ?, serial_or_key = ?, model = ?, notes = ?, category = ?,
               assigned_to = ?, last_assigned_to = ?, status = ?,
-              assigned_at = ?, returned_at = ?, updated_at = ?
+              assigned_at = ?, returned_at = ?,
+              assigned_person_id = ?, last_assigned_person_id = ?, updated_at = ?
         WHERE id = ?`
     ).run(
       bind(merged.name),
@@ -190,6 +191,8 @@ function updateAsset(db, id, patch) {
       bind(merged.status),
       bind(merged.assigned_at),
       bind(merged.returned_at),
+      bind(merged.assigned_person_id),
+      bind(merged.last_assigned_person_id),
       nowIso(db),
       id
     );

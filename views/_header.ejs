@@ -29,7 +29,7 @@
 <% var here = typeof path === 'undefined' ? '' : path; %>
 <% var titleText = typeof pageTitle !== 'undefined' ? pageTitle : 'Asset Tracker'; %>
 <% var kind = typeof headerKind !== 'undefined' ? headerKind : ''; %>
-<body<% if (kind === 'assets') { %> class="list-page"<% } %>>
+<body<% if (kind === 'assets' || (typeof listPage !== 'undefined' && listPage)) { %> class="list-page"<% } else if (kind === 'dashboard') { %> class="dash-page"<% } %>>
 <a class="skip" href="#main" data-testid="skip-link">Skip to main content</a>
 <div class="shell">
 <aside id="sidebar" class="sidebar">
@@ -58,6 +58,13 @@
         <path d="M4 11.5h16M9 7.5V5.2h6V7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span class="nav-label">Assets</span>
+    </a>
+    <a class="nav-link" href="/people" data-testid="nav-people" title="People" <% if (here === '/people' || here.indexOf('/people/') === 0) { %>aria-current="page"<% } %>>
+      <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="8" r="2.7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M6.2 18.2c1.2-2.8 3.2-4.2 5.8-4.2s4.6 1.4 5.8 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">People</span>
     </a>
     <a class="nav-link" href="/holders" data-testid="nav-holders" title="Holders" <% if (here === '/holders') { %>aria-current="page"<% } %>>
       <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">

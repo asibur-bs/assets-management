@@ -383,4 +383,56 @@ describe('asset routes (integration)', () => {
       expect(JSON.stringify(listed).length).toBeGreaterThan(0);
     });
   }
+
+  it('adds a person by email and assigns that person', async () => {
+    const created = await client.post('/people').type('form').send({
+      name: 'Maya Chen',
+      email: 'maya.chen@company.com',
+      note: 'Design',
+    });
+    expect(created.status).toBe(303);
+    expect(created.headers.location).toBe('/people');
+
+    const duplicate = await client.post('/people').type('form').send({
+      name: 'Maya Chen',
+      email: 'Maya.Chen@company.com',
+    });
+    expect(duplicate.status).toBe(400);
+    expect(duplicate.text).toContain('That email is already used.');
+
+    const other = await client.post('/people').type('form').send({
+      name: 'Maya Chen',
+      email: 'maya.chen.studio@company.com',
+      note: 'Research',
+    });
+    expect(other.status).toBe(303);
+
+    const page = await client.get('/people').query({ q: 'studio' });
+    expect(page.text).toContain('data-testid="nav-people"');
+    expect(page.text).toContain('maya.chen.studio@company.com');
+    expect(page.text).not.toContain('maya.chen@company.com');
+
+    await client.post('/assets').type('form').send({ category: 'hardware', name: 'Laptop', serial_or_key: 'P-1' });
+    const id = latestAssetId(db);
+    const before = await client.get(`/assets/${id}`);
+    expect(before.text).toContain('data-testid="assign-search"');
+    expect(before.text).toContain('name="person_id"');
+    const first = await client.get('/people/options').query({ limit: '1', offset: '0' });
+    expect(first.status).toBe(200);
+    expect(first.body.total).toBe(2);
+    expect(first.body.people).toHaveLength(1);
+    const nextPage = await client.get('/people/options').query({ limit: '1', offset: '1' });
+    expect(nextPage.body.people).toHaveLength(1);
+    expect(nextPage.body.people[0].id).not.toBe(first.body.people[0].id);
+    const filtered = await client.get('/people/options').query({ q: 'studio' });
+    expect(filtered.body.people.map((person) => person.email)).toEqual(['maya.chen.studio@company.com']);
+
+    const person = db.prepare('SELECT id FROM people WHERE email = ?').get('maya.chen.studio@company.com');
+    const assigned = await postAction(id, { action: 'assign', person_id: person.id });
+    expect(assigned.status).toBe(303);
+    const detail = await client.get(`/assets/${id}`);
+    expect(detail.text).toContain('data-testid="asset-holder">Maya Chen');
+    expect(detail.text).toContain('maya.chen.studio@company.com');
+    expect(detail.text).toContain('to Maya Chen (maya.chen.studio@company.com).');
+  });
 });

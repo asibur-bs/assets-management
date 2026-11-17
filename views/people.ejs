@@ -1,0 +1,71 @@
+<% pageTitle = 'People'; headerKind = 'people'; listPage = true; %>
+<%- include('_header') %>
+<div class="list-toolbar">
+  <p class="count-line muted" data-testid="people-count"><% if (pagination.matching === 0) { %>Showing 0 of 0 people<% } else { %>Showing <%= pagination.rangeStart %>–<%= pagination.rangeEnd %> of <%= pagination.matching %> <%= pagination.matching === 1 ? 'person' : 'people' %><% } %><% if (search) { %> matching "<%= search %>"<% } %></p>
+  <div class="list-actions">
+    <form method="get" action="/people" class="holder-search" data-testid="people-search-form">
+      <span class="search-field">
+        <svg class="search-field-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input type="search" name="q" value="<%= search %>" placeholder="Search people" aria-label="Search people" data-testid="people-search" autocomplete="off" />
+      </span>
+    </form>
+    <% if (canWrite) { %>
+      <a class="btn primary" href="/people/new" data-testid="person-new">Add person</a>
+    <% } %>
+  </div>
+</div>
+<% if (!people.length) { %>
+  <p class="empty-note muted" data-testid="people-empty">No people match.<% if (canWrite && !search) { %> Add a person before assigning an asset.<% } %></p>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="asset-table people-table" data-testid="people-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Note</th>
+          <th>Assigned</th>
+          <% if (canWrite) { %><th></th><% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% people.forEach(function (person) { %>
+          <tr data-testid="person-row">
+            <td><a href="/assets?holder=<%= encodeURIComponent(person.name) %>"><%= person.name %></a></td>
+            <td data-testid="person-email"><%= person.email %></td>
+            <td><%= person.note || '--' %></td>
+            <td><%= person.holding %></td>
+            <% if (canWrite) { %>
+              <td><a href="/people/<%= person.id %>/edit" data-testid="person-edit">Edit</a></td>
+            <% } %>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('_pagination') %>
+<% } %>
+<script>
+(function () {
+  var input = document.querySelector('[data-testid="people-search"]');
+  if (!input) return;
+  if (input.value) {
+    input.focus();
+    var end = input.value.length;
+    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(end, end);
+  }
+  var timer = null;
+  input.addEventListener('input', function () {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(function () {
+      var url = new URL('/people', window.location.origin);
+      if (input.value.trim()) url.searchParams.set('q', input.value);
+      window.location.assign(url.pathname + url.search);
+    }, 200);
+  });
+})();
+</script>
+<%- include('_footer') %>
