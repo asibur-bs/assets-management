@@ -1,6 +1,7 @@
 'use strict';
 
-const { ROLES, createUser, getUser, listUsers, updateUser } = require('../auth/users');
+const { verifyPassword } = require('../auth/passwords');
+const { ROLES, createUser, getUser, getUserByUsername, listUsers, updateUser } = require('../auth/users');
 const { paginateRows } = require('../pagination');
 
 function queryString(value) {
@@ -123,6 +124,25 @@ function mountUserRoutes(app, db) {
     }
     const values = formValues(req.body, user);
     values.username = user.username;
+    const nextPassword = queryString(req.body.password);
+    const currentPassword = queryString(req.body.current_password);
+    if (nextPassword) {
+      const stored = getUserByUsername(db, user.username);
+      const currentOk = Boolean(currentPassword) && stored && verifyPassword(currentPassword, stored.passwordHash);
+      if (!currentOk) {
+        renderForm(res, 400, {
+          mode: 'edit',
+          user,
+          values,
+          errors: [
+            currentPassword
+              ? 'Current password is not valid.'
+              : 'Enter the current password to set a new one.',
+          ],
+        });
+        return;
+      }
+    }
     try {
       updateUser(
         db,

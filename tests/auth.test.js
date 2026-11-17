@@ -177,6 +177,55 @@ describe('sign-in, roles, and users', () => {
     expect(stillAdmin.role).toBe('administrator');
   });
 
+  it('replaces a password only when the current password matches', async () => {
+    const admin = administrator(db, 'ada', 'Ada');
+    const reader = createUser(db, {
+      username: 'rio',
+      displayName: 'Rio',
+      password: 'password-1',
+      role: 'reader',
+    });
+    const client = clientFor(app, admin);
+    const form = await client.get(`/users/${reader.id}/edit`);
+    expect(form.status).toBe(200);
+    expect(form.text).toContain('Current password');
+    expect(form.text).toContain('New password');
+    expect(form.text).toContain('data-testid="user-current-password"');
+    expect(form.text).toContain('data-testid="user-password"');
+    expect(form.text).toContain('data-testid="user-current-password-toggle"');
+    expect(form.text).toContain('data-testid="user-password-toggle"');
+    expect(form.text).toContain('Leave the new password blank to keep the current one.');
+
+    const missing = await client.post(`/users/${reader.id}`).type('form').send({
+      display_name: 'Rio',
+      role: 'reader',
+      password: 'password-2',
+    });
+    expect(missing.status).toBe(400);
+    expect(missing.text).toContain('Enter the current password to set a new one.');
+    expect(missing.text).not.toContain('password-2');
+
+    const wrong = await client.post(`/users/${reader.id}`).type('form').send({
+      display_name: 'Rio',
+      role: 'reader',
+      current_password: 'password-9',
+      password: 'password-2',
+    });
+    expect(wrong.status).toBe(400);
+    expect(wrong.text).toContain('Current password is not valid.');
+    expect(wrong.text).not.toContain('password-9');
+
+    const changed = await client.post(`/users/${reader.id}`).type('form').send({
+      display_name: 'Rio',
+      role: 'reader',
+      current_password: 'password-1',
+      password: 'password-2',
+    });
+    expect(changed.status).toBe(303);
+    const signedIn = await request(app).post('/sign-in').type('form').send({ username: 'rio', password: 'password-2' });
+    expect(signedIn.status).toBe(303);
+  });
+
   it('refuses a disabled account and drops its session', async () => {
     const admin = administrator(db, 'ada', 'Ada');
     createUser(db, {

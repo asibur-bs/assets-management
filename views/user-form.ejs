@@ -30,12 +30,18 @@
       <% }); %>
     </select>
   </label>
+  <% if (mode === 'edit') { %>
+    <label>
+      Current password
+      <%- include('_password_field', { name: 'current_password', isRequired: false, autocomplete: 'current-password', testid: 'user-current-password', showLabel: 'Show current password', hideLabel: 'Hide current password' }) %>
+    </label>
+  <% } %>
   <label>
     <%= mode === 'edit' ? 'New password' : 'Password' %>
-    <input type="password" name="password" <%= mode === 'edit' ? '' : 'required' %> autocomplete="new-password" data-testid="user-password" />
+    <%- include('_password_field', { name: 'password', isRequired: mode !== 'edit', autocomplete: 'new-password', testid: 'user-password', showLabel: mode === 'edit' ? 'Show new password' : 'Show password', hideLabel: mode === 'edit' ? 'Hide new password' : 'Hide password' }) %>
   </label>
   <% if (mode === 'edit') { %>
-    <p class="muted">Leave the password blank to keep the current one.</p>
+    <p class="muted">Leave the new password blank to keep the current one.</p>
     <label class="status-toggle">
       <input type="checkbox" name="disabled" value="1" <%= values.disabled ? 'checked' : '' %> data-testid="user-disabled" />
       <span class="status-toggle-copy">
@@ -54,4 +60,22 @@
   </div>
 </form>
 </div>
+<script>
+(function () {
+  document.querySelectorAll('.password-toggle').forEach(function (button) {
+    var field = button.closest('.password-field');
+    var input = field ? field.querySelector('input') : null;
+    if (!input) return;
+    var showLabel = button.getAttribute('data-show-label') || 'Show password';
+    var hideLabel = button.getAttribute('data-hide-label') || 'Hide password';
+    button.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.setAttribute('aria-pressed', show ? 'true' : 'false');
+      button.setAttribute('aria-label', show ? hideLabel : showLabel);
+      input.focus();
+    });
+  });
+})();
+</script>
 <%- include('_footer') %>
