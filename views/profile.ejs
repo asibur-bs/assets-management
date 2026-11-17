@@ -18,9 +18,9 @@
     <dt>Status</dt>
     <dd data-testid="profile-status"><span class="profile-status <%= user.disabledAt ? 'is-disabled' : 'is-active' %>"><%= user.disabledAt ? 'Disabled' : 'Active' %></span></dd>
     <dt>Created</dt>
-    <dd data-testid="profile-created"><%= showValue(user.createdAt) %></dd>
+    <dd data-testid="profile-created"><%= showWhen(user.createdAt) %></dd>
     <dt>Updated</dt>
-    <dd data-testid="profile-updated"><%= showValue(user.updatedAt) %></dd>
+    <dd data-testid="profile-updated"><%= showWhen(user.updatedAt) %></dd>
   </dl>
 </section>
 <%- include('_footer') %>

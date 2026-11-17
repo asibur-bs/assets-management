@@ -16,10 +16,10 @@
       <dd data-testid="asset-holder"><%= showValue(asset.assigned_to) %><% if (holderPerson) { %><span class="holder-email" data-testid="asset-holder-email"><%= holderPerson.email %></span><% } %></dd>
       <dt>Last holder</dt>
       <dd data-testid="asset-last-holder"><%= showValue(asset.last_assigned_to) %><% if (lastHolderPerson) { %><span class="holder-email"><%= lastHolderPerson.email %></span><% } %></dd>
-      <dt>Assigned at</dt><dd data-testid="asset-assigned-at"><%= showValue(asset.assigned_at) %></dd>
-      <dt>Returned at</dt><dd data-testid="asset-returned-at"><%= showValue(asset.returned_at) %></dd>
-      <dt>Created</dt><dd data-testid="asset-created"><%= showValue(asset.created_at) %></dd>
-      <dt>Updated</dt><dd data-testid="asset-updated"><%= showValue(asset.updated_at) %></dd>
+      <dt>Assigned at</dt><dd data-testid="asset-assigned-at"><%= showWhen(asset.assigned_at) %></dd>
+      <dt>Returned at</dt><dd data-testid="asset-returned-at"><%= showWhen(asset.returned_at) %></dd>
+      <dt>Created</dt><dd data-testid="asset-created"><%= showWhen(asset.created_at) %></dd>
+      <dt>Updated</dt><dd data-testid="asset-updated"><%= showWhen(asset.updated_at) %></dd>
     </dl>
   </section>
   <aside class="panel detail-side">
