@@ -63,6 +63,8 @@ function createApp(db) {
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.locals.path = req.path;
+    res.locals.listPage = false;
+    res.locals.headerKind = '';
     next();
   });
   app.use(express.urlencoded({ extended: false }));

@@ -317,6 +317,11 @@ describe('view rendering', () => {
       const holders = await client.get('/holders');
       expect(holders.status).toBe(200);
       expect(holders.text).toContain('data-testid="holder-link"');
+      expect(holders.text).toContain('<body class="list-page">');
+
+      const again = await client.get('/dashboard');
+      expect(again.text).toContain('<body class="dash-page">');
+      expect(again.text).not.toContain('class="list-page"');
       expect(holders.text).toContain('href="/assets?holder=Alice"');
       expect(holders.text).toContain('Showing');
     });

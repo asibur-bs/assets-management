@@ -374,6 +374,29 @@ body.list-page .list-note,
 body.list-page .empty-note,
 body.list-page .pagination,
 body.list-page .legend { flex: 0 0 auto; }
+body.dash-page { overflow: hidden; }
+body.dash-page .shell,
+body.dash-page .workspace {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+body.dash-page .topbar { flex: 0 0 auto; }
+body.dash-page .container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+body.dash-page .container::-webkit-scrollbar { width: 10px; }
+body.dash-page .container::-webkit-scrollbar-track { background: transparent; }
+body.dash-page .container::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
 body.list-page .list-toolbar .count-line { margin: 0; }
 body.list-page .table-scroll {
   flex: 1 1 auto;
@@ -738,28 +761,6 @@ dialog::backdrop { background: var(--overlay); }
   .detail-layout { grid-template-columns: 1fr; }
   .container { padding: 1rem; }
   .topbar { padding: 0.75rem 1rem; }
-  body.dash-page { overflow: hidden; }
-  body.dash-page .shell,
-  body.dash-page .workspace {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
-  }
-  body.dash-page .container {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-  }
-  body.dash-page .container::-webkit-scrollbar { width: 10px; }
-  body.dash-page .container::-webkit-scrollbar-track { background: transparent; }
-  body.dash-page .container::-webkit-scrollbar-thumb {
-    background: var(--muted);
-    border-radius: 6px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
 }
 @media (max-width: 640px) {
   body { overflow-x: hidden; }
