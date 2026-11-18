@@ -126,7 +126,7 @@ describe('delivery gates', () => {
     expect(workflow).toMatch(/permissions:\s*\n\s*contents:\s*read\b/);
     expect(workflow).not.toMatch(/^\s*(packages|contents|id-token|actions|pull-requests|checks):\s*(?!read\b)\S+/m);
     expect(workflow).not.toMatch(/pull_request_target/);
-    expect(workflow).toMatch(/node-version:\s*['"]24\.21\.0['"]/);
+    expect(workflow).toMatch(/node-version:\s*['"]20\.20\.0['"]/);
     const secretIdx = workflow.indexOf('bash scripts/secret-scan.sh');
     const ciIdx = workflow.indexOf('npm ci');
     const lintIdx = workflow.indexOf('npm run lint');
