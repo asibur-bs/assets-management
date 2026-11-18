@@ -4,7 +4,7 @@
 <form method="get" action="/assets" class="filters asset-filters" data-testid="filters">
   <div class="dialog-head filter-dialog-head">
     <h2 id="filter-dialog-title">Filters</h2>
-    <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+    <%- include('_dialog-close') %>
   </div>
   <input type="hidden" name="search_text" value="<%= filters.search_text %>" data-asset-search-value />
   <label class="field">Category
@@ -156,7 +156,7 @@
   <form method="post" action="/assets/import" enctype="multipart/form-data" class="dialog-form">
     <div class="dialog-head">
       <h2 id="import-assets-title">Import assets</h2>
-      <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+      <%- include('_dialog-close') %>
     </div>
     <p class="muted">Choose an Excel workbook (.xlsx) made from the import template. If any row has a problem, nothing from the file is added.</p>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -173,7 +173,7 @@
 <dialog id="import-report" class="filter-dialog" data-reopen aria-labelledby="import-report-title" data-testid="import-report">
   <div class="dialog-head">
     <h2 id="import-report-title"><%= importReport.title %></h2>
-    <button type="button" class="btn" aria-label="Close" data-close-dialog>×</button>
+    <%- include('_dialog-close') %>
   </div>
   <p data-testid="import-intro"><%= importReport.intro %></p>
   <% if (importReport.messages && importReport.messages.length) { %>

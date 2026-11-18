@@ -65,7 +65,7 @@
           <dialog id="reason-<%= action.action %>" aria-labelledby="reason-heading-<%= action.action %>" aria-describedby="reason-consequence-<%= action.action %>" data-testid="reason-dialog-<%= action.action %>" <%= reasonError && reasonError.action === action.action ? 'data-reopen' : '' %>>
             <div class="dialog-head">
               <h2 id="reason-heading-<%= action.action %>"><%= action.heading %></h2>
-              <button type="button" class="btn" aria-label="Close" data-close-dialog data-testid="reason-close-<%= action.action %>">X</button>
+              <%- include('_dialog-close', { closeTestId: 'reason-close-' + action.action }) %>
             </div>
             <p id="reason-consequence-<%= action.action %>" data-testid="reason-consequence-<%= action.action %>"><%= action.consequence %></p>
             <form method="post" action="/assets/<%= asset.id %>" class="form dialog-form" data-testid="form-<%= action.action %>">
